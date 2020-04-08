@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>PhysicsBasedAnimation - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="Google I/O ‘17推出了许多新的特性，在动画这一块又有新的API供开发者使用，具体视频请见Android Animations Spring to Life (Google I/O ‘17)，主要介绍了Physics-based Animations，在动画API中引入了DynamicAn">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="PhysicsBasedAnimation"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/animation.jpg" alt="PhysicsBasedAnimation">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>PhysicsBasedAnimation</h1>
+      <hr>
+      <span class="date">2017-07-07</span>
+    </div>
+
+    <p>Google I/O ‘17推出了许多新的特性，在动画这一块又有新的API供开发者使用，具体视频请见<a href="https://www.youtube.com/watch?v=BNcODK-Ju0g" target="_blank" rel="noopener">Android Animations Spring to Life (Google I/O ‘17)</a>，主要介绍了Physics-based Animations，在动画API中引入了<code>DynamicAnimation</code>，并介绍了它的两个子类<code>FlingAnimation</code>和<code>SpringAnimation</code>的使用，开发者可以使用新的API创建更加动态化的动画。</p>
+<h2 id="是什么"><a href="#是什么" class="headerlink" title="是什么"></a>是什么</h2><p>Physics-based Animations，翻译过来就是基于物理的动画，<a href="https://developer.android.com/topic/libraries/support-library/preview/physics-based-animation.html" target="_blank" rel="noopener">官网</a>上有很详细的介绍，在日常生活中当一个事物发生变化的时候，物理性的过渡或者说符合自然性的过渡，更容易让我们感知察觉，同样，更自然、不间断、有良好发展趋势的动画会给我们带来更好的用户体验。Physics-based Animations是根据物理学的基本原理构建的动画，动画由力产生，当力趋于平衡时动画处于静止。让我们重新捡起高中半吊子水平的物理知识，比如给物体在某个方向上施加一个力，物体有了速度，会在该方向上运动，如果停止施力，最后物体会由于摩擦力的影响，速度逐渐减小，运动一段时间后处于静止状态。Physics-based Animations概括起来就是下面几点：</p>
+<ul>
+<li>动画由力驱动</li>
+<li>力决定了动画的加速和减速</li>
+<li>在每一帧中动画值和速度都会更新</li>
+<li>当受力达到平衡时动画停止</li>
+</ul>
+<h2 id="好处"><a href="#好处" class="headerlink" title="好处"></a>好处</h2><p>使用Physics-based Animations api创建的动画可以追踪速度，在运动过程中动态地改变动画的目标值，正确规划路线，使动画看起来更加自然。看下两组动画</p>
+<p>​    <img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/targetchange_oa.gif" style="zoom:50%" /></p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/targetchange_pba.gif" style="zoom:50%" />
+
+<p>对比了两组动画的差别，图1动画无法追踪速度，在进行下一帧的时候它的速度几乎还是从0开始的，速度值突然的变化给用户不连贯的视觉体验。图2动画可以追踪速度，在第二阶段力的方向改变，导致原先的速度发生变化，图片看起来很自然地移动到新的位置</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/oa_chart.png" style="zoom:40%"/>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/pba_chart.png" style="zoom:40%"/>
+
+<h2 id="怎么用"><a href="#怎么用" class="headerlink" title="怎么用"></a>怎么用</h2><ul>
+<li>Android Studio 3.0 Canary 4</li>
+<li>在Android Studio的build.gradle中添加依赖</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dependencies &#123;</span><br><span class="line">    ...</span><br><span class="line">    implementation &#39;com.android.support:support-dynamic-animation:26.0.0-beta2&#39;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Fling-Animation"><a href="#Fling-Animation" class="headerlink" title="Fling Animation"></a>Fling Animation</h2><p>看下怎样创建FlingAnimation:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ImageView img &#x3D; root.findViewById(R.id.img_simple_fling);</span><br><span class="line">FlingAnimation flingAnimation &#x3D; new FlingAnimation(img, DynamicAnimation.X);</span><br><span class="line">flingAnimation.setStartVelocity(500f);</span><br><span class="line">flingAnimation.setFriction(0.5f);</span><br><span class="line">flingAnimation.start();</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/fling.gif" style="zoom:50%" />
+
+<p>解释下上面的代码:<br>创建一个FlingAnimation实例，默认情况下该实例的初速度是0pixels/s，因此我们需要调用<code>setStartVelocity()</code>方法给它赋予一个大于0的初速度，否则它是不会动的；另外这里介绍下<code>Friction</code>，翻译过来就是摩擦力的意思，在现实生活中如果一个物体保持一个速度在无摩擦力的情况下会一直运动下去，这里也是(比如这里设置Fraction为0.01f，发现小球滚到屏幕外了)，我们需要给该实例设置一个摩擦系数，设置的值越大，说明摩擦力越大，动画越快停下来，默认该值为1；最后调用start()方法开始动画。</p>
+<h2 id="Spring-Animation"><a href="#Spring-Animation" class="headerlink" title="Spring Animation"></a>Spring Animation</h2><p>看下怎样创建SpringAnimation:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">ImageView img &#x3D; root.findViewById(R.id.img_simple_spring);</span><br><span class="line">SpringAnimation springAnimation &#x3D; new SpringAnimation(img, DynamicAnimation.X);</span><br><span class="line">springAnimation.setStartVelocity(2000);</span><br><span class="line"></span><br><span class="line">SpringForce springForce &#x3D; new SpringForce();   </span><br><span class="line">springForce.setDampingRatio(SpringForce.DAMPING_RATIO_HIGH_BOUNCY);</span><br><span class="line">springForce.setStiffness(SpringForce.STIFFNESS_LOW);</span><br><span class="line">springForce.setFinalPosition(img.getX());</span><br><span class="line"></span><br><span class="line">springAnimation.setSpring(springForce);</span><br><span class="line">springAnimation.start();</span><br></pre></td></tr></table></figure>
+
+<p>效果如下:</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/spring.gif" style="zoom:50%" />
+
+<p>解释下上面的代码:<br>和FlingAnimation一样，创建完SpringAnimation后我们需要设置初速度，接着创建了一个<br><code>SpringForce</code>实例，并设置了<code>DampingRatio</code>(弹性阻尼)和<code>Stiffness</code>(生硬度)，<br><code>DampingRatio</code>可以理解成反弹次数，系统中有以下几个可选，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public static final float DAMPING_RATIO_HIGH_BOUNCY &#x3D; 0.2F;</span><br><span class="line">public static final float DAMPING_RATIO_MEDIUM_BOUNCY &#x3D; 0.5F;</span><br><span class="line">public static final float DAMPING_RATIO_LOW_BOUNCY &#x3D; 0.75F;</span><br><span class="line">public static final float DAMPING_RATIO_NO_BOUNCY &#x3D; 1.0F;</span><br></pre></td></tr></table></figure>
+
+<p>默认设置为<code>DAMPING_RATIO_MEDIUM_BOUNCY</code>，在<a href="https://developer.android.com/topic/libraries/support-library/preview/spring-animation.html" target="_blank" rel="noopener">官网</a>上贴了四张很Q弹的图片，分别对应不同值的效果，该值越大，反弹次数越少，值为1时不反弹。<br><code>Stiffness</code>可以理解成要恢复成未拉伸状态所需的时间，系统中有以下几个可选，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public static final float STIFFNESS_HIGH &#x3D; 10000.0F;</span><br><span class="line">public static final float STIFFNESS_MEDIUM &#x3D; 1500.0F;</span><br><span class="line">public static final float STIFFNESS_LOW &#x3D; 200.0F;</span><br><span class="line">public static final float STIFFNESS_VERY_LOW &#x3D; 50.0F;</span><br></pre></td></tr></table></figure>
+
+<p>默认设置为<code>STIFFNESS_MEDIUM</code>，在<a href="https://developer.android.com/topic/libraries/support-library/preview/spring-animation.html" target="_blank" rel="noopener">官网</a>同样贴了四张对应不同值得对比图，该值越大，恢复到之前状态的时间就越短。可以修改<code>DampingRatio</code>或<code>Stiffness</code>查看效果</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/physics2.gif" style="zoom:50%" />
+
+<p>setFinalPosition()方法指定最后静止时的位置。</p>
+<h2 id="创建自定义的动画属性"><a href="#创建自定义的动画属性" class="headerlink" title="创建自定义的动画属性"></a>创建自定义的动画属性</h2><p>SpringAniamtion和FlingAnimation的构造函数只能接收一个可动画属性参数，如<code>ALPHA</code>、<code>ROTATION</code>、<code>SCALE</code>等，如果要同时为多个属性生成动画，一种方法是创建多个对应类的实例，然后传入要改变的动画值，这种做法比较麻烦，我们可以创建一个新的属性，该属性封装了我们想改变的其他动画属性值，做法如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">FloatPropertyCompat&lt;View&gt; scale &#x3D; </span><br><span class="line">        new FloatPropertyCompat&lt;View&gt;(&quot;scale&quot;) &#123;</span><br><span class="line">            @Override</span><br><span class="line">            public float getValue(View view) &#123;</span><br><span class="line">                &#x2F;&#x2F; return the value of any one property</span><br><span class="line">                return view.getScaleX();</span><br><span class="line">            &#125;</span><br><span class="line"> </span><br><span class="line">            @Override</span><br><span class="line">            public void setValue(View view, float value) &#123;</span><br><span class="line">                &#x2F;&#x2F; Apply the same value to two properties</span><br><span class="line">                view.setScaleX(value);</span><br><span class="line">                view.setScaleY(value);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>FloatPropertyCompat</code>实例，在<code>setValue()</code>方法中更新要修改的动画属性，在<code>getValue()</code>方法中返回当前属性值，示例代码统一改变了<code>SCALE_X</code>和<code>SCALE_Y</code>属性，自定义属性创建好之后可以像其他动画属性一样使用它，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SpringAnimation stretchAnimation &#x3D;</span><br><span class="line">            new SpringAnimation(emoji, scale);</span><br></pre></td></tr></table></figure>
+
+<p>在创建使用自定义属性的动画时，最好也调用<code>setMinimumVisibleChange()</code>方法并传递一个有意义的值，以确保动画不会消耗太多的CPU性能</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">stretchAnimation.setMinimumVisibleChange(</span><br><span class="line">                DynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);</span><br></pre></td></tr></table></figure>
+
+<p>效果如下:</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/stretch.gif" style="zoom:50%" />
+
+<h2 id="动画监听"><a href="#动画监听" class="headerlink" title="动画监听"></a>动画监听</h2><p><code>DynamicAnimation</code>提供了两个动画监听器<code>OnAnimationUpdateListener</code>和 <code>OnAnimationEndListener</code>，从名字也可以猜到前者监听动画值改变，后者监听动画结束状态。添加动画变化监听需要调用<code>addUpdateListener()</code>方法，重写<code>onAnimationUpdate()</code>方法执行具体操作；添加动画结束监听需要调用<code>addEndListener()</code>方法，重写<code>onAnimationEnd()</code>方法执行具体操作；若要移除动画监听，则需要调用<code>removeUpdateListener()</code>和<code>removeEndListener()</code>。监听动画结束的使用场景:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Change icon before animation starts</span><br><span class="line">emoji.setImageResource(</span><br><span class="line">        R.drawable.ic_sentiment_very_satisfied_black_56dp);</span><br><span class="line"> </span><br><span class="line">&#x2F;&#x2F; Start animation</span><br><span class="line">springAnimation.start();</span><br><span class="line"> </span><br><span class="line">springAnimation.addEndListener(</span><br><span class="line">    new DynamicAnimation.OnAnimationEndListener() &#123;</span><br><span class="line">        @Override</span><br><span class="line">        public void onAnimationEnd(DynamicAnimation animation, </span><br><span class="line">                                boolean canceled,</span><br><span class="line">                                float value, float velocity) &#123;</span><br><span class="line">            &#x2F;&#x2F; Change icon after animation ends</span><br><span class="line">            emoji.setImageResource(</span><br><span class="line">                    R.drawable.ic_sentiment_neutral_black_56dp);</span><br><span class="line">        &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>当动画结束时变换表情，效果如下:</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/bounce.gif" style="zoom:50%" />
+
+<p>监听动画变化的使用场景:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Creating two views to demonstrate the registration of the update listener.</span><br><span class="line">final View view1 &#x3D; findViewById(R.id.view1);</span><br><span class="line">final View view2 &#x3D; findViewById(R.id.view2);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Setting up a spring animation to animate the view1</span><br><span class="line">&#x2F;&#x2F; and view2 translationX and translationY properties</span><br><span class="line">final SpringAnimation anim1X &#x3D; new SpringAnimation(view1,</span><br><span class="line">        DynamicAnimation.TRANSLATION_X);</span><br><span class="line">final SpringAnimation anim1Y &#x3D; new SpringAnimation(view1,</span><br><span class="line">    DynamicAnimation.TRANSLATION_Y);</span><br><span class="line">final SpringAnimation anim2X &#x3D; new SpringAnimation(view2,</span><br><span class="line">        DynamicAnimation.TRANSLATION_X);</span><br><span class="line">final SpringAnimation anim2Y &#x3D; new SpringAnimation(view2,</span><br><span class="line">        DynamicAnimation.TRANSLATION_Y);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Registering the update listener</span><br><span class="line">anim1X.addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() &#123;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Overriding the method to notify view2 about the change in the view1’s property.</span><br><span class="line">    @Override</span><br><span class="line">    public void onAnimationUpdate(DynamicAnimation dynamicAnimation, float value,</span><br><span class="line">                                  float velocity) &#123;</span><br><span class="line">        anim2X.animateToFinalPosition(value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">anim1Y.addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() &#123;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">    public void onAnimationUpdate(DynamicAnimation dynamicAnimation, float value,</span><br><span class="line">                                  float velocity) &#123;</span><br><span class="line">        anim2Y.animateToFinalPosition(value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>我们可以结合<code>animateToFinalPosition()</code>方法实现链式弹力动画效果，即一个View的动画依赖于另一个，效果如下:</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/spring_chain.gif" style="zoom:50%" />
+
+<h2 id="Thanks-to"><a href="#Thanks-to" class="headerlink" title="Thanks to"></a>Thanks to</h2><ul>
+<li><a href="https://code.tutsplus.com/tutorials/adding-physics-based-animations-to-android-apps--cms-29053" target="_blank" rel="noopener">Adding Physics-Based Animations to Android Apps</a></li>
+<li><a href="https://developer.android.com/topic/libraries/support-library/preview/physics-based-animation.html" target="_blank" rel="noopener">Physics-based Animations</a></li>
+<li><a href="https://developer.android.com/topic/libraries/support-library/preview/spring-animation.html" target="_blank" rel="noopener">Spring Animation</a></li>
+<li><a href="https://developer.android.com/topic/libraries/support-library/preview/fling-animation.html" target="_blank" rel="noopener">Fling Animation</a></li>
+<li><a href="https://github.com/android/platform_frameworks_support/tree/master/samples/SupportAnimationDemos" target="_blank" rel="noopener">官方Demo</a></li>
+</ul>
+<p><a href="https://github.com/Rkhcy/PhysicsBasedAnimation/tree/master" target="_blank" rel="noopener">GitHub Demo传送门</a></p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

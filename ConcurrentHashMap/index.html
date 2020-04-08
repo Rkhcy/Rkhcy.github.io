@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>图解 ConcurrentHashMap - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="上篇文章介绍了 HashMap 在多线程并发情况下是不安全的，多线程并发推荐使用 ConcurrentHashMap ，那么 ConcurrentHashMap 是什么？它的设计思想是什么，源码是怎么实现的？
+ConcurrentHashMap 是什么Concurrent 翻译过来是并发的意思，字面">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="图解 ConcurrentHashMap"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/cover_current_hashmap.jpg" alt="图解 ConcurrentHashMap">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>图解 ConcurrentHashMap</h1>
+      <hr>
+      <span class="date">2017-12-06</span>
+    </div>
+
+    <p>上篇文章介绍了 HashMap 在多线程并发情况下是不安全的，多线程并发推荐使用 ConcurrentHashMap ，那么 ConcurrentHashMap 是什么？它的设计思想是什么，源码是怎么实现的？</p>
+<h3 id="ConcurrentHashMap-是什么"><a href="#ConcurrentHashMap-是什么" class="headerlink" title="ConcurrentHashMap 是什么"></a>ConcurrentHashMap 是什么</h3><p>Concurrent 翻译过来是并发的意思，字面理解它的作用是处理并发情况的 HashMap，在介绍它之前先回顾下之前的知识。通过前面两篇学习，我们知道多线程并发下 HashMap 是不安全的(如死循环)，更普遍的是多线程并发下，由于堆内存对于各个线程是共享的，而 HashMap 的 put 方法不是原子操作，假设 Thread1 先 put 值，然后 sleep 2 秒(也可以是系统时间片切换失去执行权)，在这 2 秒内值被 Thread2 改了，Thread1 “醒来”再 get 的时候发现已经不是原来的值了，这就容易出问题。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_01.png" style="zoom:50%"/>
+
+<p>那么如何避免这种多线程“奥迪变奥拓”的情况呢？常规思路就是给 HashMap 的 put 方法加锁，保证同一个时刻只允许一个线程拥有对 hashmap 有写的操作权限即可。然而假如线程 1 中操作耗时，占着茅坑半天不出来，其他需要操作该  hashmap 的线程就需要在门口排队半天，严重影响用户体验(HashTable 就是这么干的)。举个生活中的例子，很多银行除了存取钱，还支持存取贵重物品，贵重物品都放在保险箱里，把 HashMap 和 HashTable 比作银行，结构：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_02.png" style="zoom:50%"/>
+
+<p>把线程比作人，对应的情况如下：</p>
+<ul>
+<li>HashMap 牌银行：我们的服务宗旨是不用排队，同一时间多人都有机会修改保险柜里的东西，你以为你存的是美元？取出来的其实是日元，破产就在一瞬间，刺不刺激。</li>
+<li>HashTable 牌银行：我们的服务宗旨是要排队，同一时间只有一个人有机会修改保险柜里的东西，其余的人只能看不能动手改，保你存的是美元取得还是美元。</li>
+</ul>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_03.png" style="zoom:50%"/>
+
+<p>多线程下用 HashMap 不确定性太高，有破产的风险，不能选；用 HashTable 不会破产，但是用户体验不太好，那么怎样才能做到多人存取既不影响他人存值，又不用排队呢？有人提议搞个「银行者联盟」，多开几个像 HashTable 这种「带锁」的银行就好了，有多少人办理业务，就开多少个银行，一对一服务。</p>
+<p>接下来的情况是这样的：比如盖伦和亚索一起去银行存他们的大宝剑，这个「银行者联盟」一顿操作，然后对盖伦说，1 号银行现在没人，你可以去那存，不用排队，然后盖伦就去 1 号银行存他的大宝剑，1 号银行把盖伦接进门，马上拉闸，一顿操作，然后把盖伦的大宝剑放在第 x 行第 x 个保险箱，等盖伦办妥离开后，再开闸；同样「银行者联盟」对亚索说，2 号银行现在没人，你可以去那存，不用排队，然后亚索去 2 号银行存他的大宝剑，2 号银行把亚索接进门，马上拉闸，一顿操作把亚索的大宝剑放在第 x 行第 x 号保险箱，等亚索离开后再开闸，此时不管盖伦和亚索在各自银行里面待多久都不会影响到彼此，不用担心自己的大宝剑被人偷换了。这就是 ConcurrentHashMap 的设计思路，用一个图来理解</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_04.png" style="zoom:50%"/>
+
+
+
+<p>从上图可以看出，此时锁的是对应的单个银行，而不是整个「银行者联盟」。分析下这种设计的特点：</p>
+<ul>
+<li>多个银行组成的「银行者联盟」</li>
+<li>当有人来办理业务时，「银行者联盟」需要确定这个人去哪个银行</li>
+<li>当此人去到指定银行办理业务后，该银行上锁，其他人不能同时执行修改操作，直到此人离开后解锁</li>
+</ul>
+<p>由这几点基本思想可以引发一些思考，比如：</p>
+<p>1.成立「银行者联盟」时初识银行数是多少？怎么设计合理？</p>
+<p>上面这张图没有给出是否需要排队的结论，这是因为需要结合实际情况分析，比如初始化有 16 个银行，只有两个人来办理业务，那自然不需要排队；如果现在 16 个银行都有人在办理业务，这时候来了第 17 个人，那么他还是需要排队的。由于「银行者联盟」事先无法得知会有多少人来办理业务，所以在它创立的时候需要制定一个「标准」，即初始银行数量，人多的情况「银行者联盟」应该多开几家银行，避免别人排队；人少的情况应该少开，避免浪费资源。</p>
+<p>2.当有人来办理业务的时候，「银行者联盟」怎么确定此人去哪个银行？</p>
+<p>正常情况下，如果所有银行都是未上锁状态，那么有人来办理业务去哪都不用排队，当其中有些银行已经上锁，那么后续「银行者联盟」给人推荐的时候就不能把客户往上锁的银行引了，否则分分钟给人锤成麻瓜。因此「银行者联盟」需要时刻保持清醒的头脑，对自己的银行空闲情况了如指掌，每次给用户推荐都应该是最好的选择。</p>
+<p>3.「银行者联盟」怎么保证同一时间不会有两个人在同一个银行拥有存权限？</p>
+<p>通过对指定银行加锁/解锁的方式实现。</p>
+<h4 id="Java7-源码分析"><a href="#Java7-源码分析" class="headerlink" title="Java7 源码分析"></a>Java7 源码分析</h4><p>通过 Java7 的源码分析下代码实现，先看下一些重要的成员</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;默认的数组大小16(HashMap里的那个数组)</span><br><span class="line">static final int DEFAULT_INITIAL_CAPACITY &#x3D; 16;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;扩容因子0.75</span><br><span class="line">static final float DEFAULT_LOAD_FACTOR &#x3D; 0.75f;</span><br><span class="line"> </span><br><span class="line">&#x2F;&#x2F;ConcurrentHashMap中的数组</span><br><span class="line">final Segment&lt;K,V&gt;[] segments</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;默认并发标准16</span><br><span class="line">static final int DEFAULT_CONCURRENCY_LEVEL &#x3D; 16;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;Segment是ReentrantLock子类，因此拥有锁的操作</span><br><span class="line"> static final class Segment&lt;K,V&gt; extends ReentrantLock implements Serializable &#123;</span><br><span class="line">  &#x2F;&#x2F;HashMap的那一套，分别是数组、键值对数量、阈值、负载因子</span><br><span class="line">  transient volatile HashEntry&lt;K,V&gt;[] table;</span><br><span class="line">  transient int count;</span><br><span class="line">  transient int threshold;</span><br><span class="line">  final float loadFactor;</span><br><span class="line"></span><br><span class="line">  Segment(float lf, int threshold, HashEntry&lt;K,V&gt;[] tab) &#123;</span><br><span class="line">            this.loadFactor &#x3D; lf;</span><br><span class="line">            this.threshold &#x3D; threshold;</span><br><span class="line">            this.table &#x3D; tab;</span><br><span class="line">        &#125;</span><br><span class="line"> &#125;</span><br><span class="line"> </span><br><span class="line"> &#x2F;&#x2F;换了马甲还是认识你！！！HashEntry对象，存key、value、hash值以及下一个节点</span><br><span class="line"> static final class HashEntry&lt;K,V&gt; &#123;</span><br><span class="line">        final int hash;</span><br><span class="line">        final K key;</span><br><span class="line">        volatile V value;</span><br><span class="line">        volatile HashEntry&lt;K,V&gt; next;</span><br><span class="line"> &#125;</span><br><span class="line">&#x2F;&#x2F;segment中HashEntry[]数组最小长度</span><br><span class="line">static final int MIN_SEGMENT_TABLE_CAPACITY &#x3D; 2;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;用于定位在segments数组中的位置，下面介绍</span><br><span class="line">final int segmentMask;</span><br><span class="line">final int segmentShift;</span><br></pre></td></tr></table></figure>
+
+<p>上面这些一下出来有点接受不了没关系，下面都会介绍到。</p>
+<p>接下来从最简单的初识化开始分析</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ConcurrentHashMap concurrentHashMap &#x3D; new ConcurrentHashMap();</span><br></pre></td></tr></table></figure>
+
+<p>默认构造函数会调用带三个参数的构造函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">public ConcurrentHashMap() &#123;</span><br><span class="line">    this(DEFAULT_INITIAL_CAPACITY,DEFAULT_LOAD_FACTOR,DEFAULT_CONCURRENCY_LEVEL);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public ConcurrentHashMap(int initialCapacity,</span><br><span class="line">                         float loadFactor, int concurrencyLevel) &#123;</span><br><span class="line">    if (!(loadFactor &gt; 0) || initialCapacity &lt; 0 || concurrencyLevel &lt;&#x3D; 0)</span><br><span class="line">        throw new IllegalArgumentException();</span><br><span class="line">    if (concurrencyLevel &gt; MAX_SEGMENTS)</span><br><span class="line">        concurrencyLevel &#x3D; MAX_SEGMENTS;</span><br><span class="line">    &#x2F;&#x2F; Find power-of-two sizes best matching arguments</span><br><span class="line">    &#x2F;&#x2F;步骤① start</span><br><span class="line">    int sshift &#x3D; 0;</span><br><span class="line">    int ssize &#x3D; 1;</span><br><span class="line">    while (ssize &lt; concurrencyLevel) &#123;</span><br><span class="line">        ++sshift;</span><br><span class="line">        ssize &lt;&lt;&#x3D; 1;</span><br><span class="line">    &#125;</span><br><span class="line">    this.segmentShift &#x3D; 32 - sshift;</span><br><span class="line">    this.segmentMask &#x3D; ssize - 1;</span><br><span class="line">    &#x2F;&#x2F;步骤① end</span><br><span class="line">    &#x2F;&#x2F;步骤② start</span><br><span class="line">    if (initialCapacity &gt; MAXIMUM_CAPACITY)</span><br><span class="line">        initialCapacity &#x3D; MAXIMUM_CAPACITY;</span><br><span class="line">    int c &#x3D; initialCapacity &#x2F; ssize;</span><br><span class="line">    if (c * ssize &lt; initialCapacity)</span><br><span class="line">        ++c;</span><br><span class="line">    int cap &#x3D; MIN_SEGMENT_TABLE_CAPACITY;</span><br><span class="line">    while (cap &lt; c)</span><br><span class="line">        cap &lt;&lt;&#x3D; 1;</span><br><span class="line">    &#x2F;&#x2F;步骤② end</span><br><span class="line">    &#x2F;&#x2F; create segments and segments[0]</span><br><span class="line">    &#x2F;&#x2F;步骤③ start</span><br><span class="line">    Segment&lt;K,V&gt; s0 &#x3D;</span><br><span class="line">        new Segment&lt;K,V&gt;(loadFactor, (int)(cap * loadFactor),</span><br><span class="line">                         (HashEntry&lt;K,V&gt;[])new HashEntry[cap]);</span><br><span class="line">    Segment&lt;K,V&gt;[] ss &#x3D; (Segment&lt;K,V&gt;[])new Segment[ssize];</span><br><span class="line">    UNSAFE.putOrderedObject(ss, SBASE, s0); &#x2F;&#x2F; ordered write of segments[0]</span><br><span class="line">    this.segments &#x3D; ss;</span><br><span class="line">    &#x2F;&#x2F;步骤③ end</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面定义了许多临时变量，注释写的又少，第一次看名字根本不知道这鬼东西代表什么意思，不过我们可以把已知的数据代进去，算出这些变量的值，再分析能不能找出一些猫腻。假设这是第一次默认创建：</p>
+<ul>
+<li>步骤① concurrencyLevel = 16 ，可以计算出 sshift = 4，ssize = 16，segmentShift = 28，segmentMask = 15；</li>
+<li>步骤② c = 16/16 = 1，cap = 2；</li>
+<li>步骤③有句注释，创建 Segment 数组 segments 并初始化 segments [0] ，所以 s0 初始化后数组长度为 2 ，负载因子 0.75，阈值为 1 ；再看这里的 ss 的初始化(重点！！！)， ssize 此时为16，所以默认数组长度16，给人一种感觉正好和我们传的 concurrencyLevel 一样？看下下面的例子</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">例子1</th>
+<th align="center">例子2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">ssize = 1，concurrencyLevel = 10</td>
+<td align="center">ssize = 1，concurrencyLevel = 8</td>
+</tr>
+<tr>
+<td align="center">ssize &lt;&lt;= 1 —&gt; 2&lt;10 满足</td>
+<td align="center">ssize &lt;&lt;= 1 —&gt; 2&lt;10 满足</td>
+</tr>
+<tr>
+<td align="center">ssize &lt;&lt;= 1 —&gt; 4&lt;10 满足</td>
+<td align="center">ssize &lt;&lt;= 1 —&gt; 4&lt;10 满足</td>
+</tr>
+<tr>
+<td align="center">ssize &lt;&lt;= 1 —&gt; 8&lt;10 满足</td>
+<td align="center">ssize &lt;&lt;= 1 —&gt; 8&lt;10 不满足 ssize = 8</td>
+</tr>
+<tr>
+<td align="center">ssize &lt;&lt;= 1 —&gt; 16&lt;10 不满足 ssize = 16</td>
+<td align="center"></td>
+</tr>
+</tbody></table>
+<p>所以我们传 concurrencyLevel 不一定就是最后数组的长度，长度的计算公式：</p>
+<blockquote>
+<p>长度 = 2 的 n 次方( 2 的 n 次方 &gt;= concurrencyLevel ) </p>
+</blockquote>
+<p>到这里只是创建了一个长度为 16 的 Segment 数组，并初始化数组 0 号位置，segmentShift 和 segmentMask 还没派上用场，画图存档:</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_05.png" style="zoom:50%"/>
+
+<p>接着看 put 方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">public V put(K key, V value) &#123;</span><br><span class="line">    Segment&lt;K,V&gt; s;</span><br><span class="line">    &#x2F;&#x2F;步骤①注意valus不能为空！！！</span><br><span class="line">    if (value &#x3D;&#x3D; null)</span><br><span class="line">        throw new NullPointerException();</span><br><span class="line">    &#x2F;&#x2F;根据key计算hash值，key也不能为null，否则hash(key)报空指针</span><br><span class="line">    int hash &#x3D; hash(key);</span><br><span class="line">    &#x2F;&#x2F;步骤②派上用场了，根据hash值计算在segments数组中的位置</span><br><span class="line">    int j &#x3D; (hash &gt;&gt;&gt; segmentShift) &amp; segmentMask;</span><br><span class="line">    &#x2F;&#x2F;步骤③查看当前数组中指定位置Segment是否为空</span><br><span class="line">    &#x2F;&#x2F;若为空，先创建初始化Segment再put值，不为空，直接put值。</span><br><span class="line">    if ((s &#x3D; (Segment&lt;K,V&gt;)UNSAFE.getObject          &#x2F;&#x2F; nonvolatile; recheck</span><br><span class="line">         (segments, (j &lt;&lt; SSHIFT) + SBASE)) &#x3D;&#x3D; null) &#x2F;&#x2F;  in ensureSegment</span><br><span class="line">        s &#x3D; ensureSegment(j);</span><br><span class="line">    return s.put(key, hash, value, false);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>步骤①可以看到和 HashMap 的区别，这里的 key/value 为空会报空指针异常；步骤②先根据 key 值计算 hash 值，再和前面算出来的两个变量计算出这个 key 应该放在哪个 Segment 中(具体怎么计算的有兴趣可以去研究下，先高位运算再取与)，假设我们算出来该键值对应该放在 5 号，步骤③判断 5 号为空，看下 ensureSegment() 方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">private Segment&lt;K,V&gt; ensureSegment(int k) &#123;</span><br><span class="line">        &#x2F;&#x2F;获取segments</span><br><span class="line">        final Segment&lt;K,V&gt;[] ss &#x3D; this.segments;</span><br><span class="line">        long u &#x3D; (k &lt;&lt; SSHIFT) + SBASE; &#x2F;&#x2F; raw offset</span><br><span class="line">        Segment&lt;K,V&gt; seg;</span><br><span class="line">        if ((seg &#x3D; (Segment&lt;K,V&gt;)UNSAFE.getObjectVolatile(ss, u)) &#x3D;&#x3D; null) &#123;</span><br><span class="line">            &#x2F;&#x2F;拷贝一份和segment 0一样的segment</span><br><span class="line">            Segment&lt;K,V&gt; proto &#x3D; ss[0]; &#x2F;&#x2F; use segment 0 as prototype</span><br><span class="line">            &#x2F;&#x2F;大小和segment 0一致，为2</span><br><span class="line">            int cap &#x3D; proto.table.length;</span><br><span class="line">            &#x2F;&#x2F;负载因子和segment 0一致，为0.75</span><br><span class="line">            float lf &#x3D; proto.loadFactor;</span><br><span class="line">            &#x2F;&#x2F;阈值和segment 0一致，为1</span><br><span class="line">            int threshold &#x3D; (int)(cap * lf);</span><br><span class="line">            &#x2F;&#x2F;根据大小创建HashEntry数组tab</span><br><span class="line">            HashEntry&lt;K,V&gt;[] tab &#x3D; (HashEntry&lt;K,V&gt;[])new HashEntry[cap];</span><br><span class="line">            &#x2F;&#x2F;再次检查</span><br><span class="line">            if ((seg &#x3D; (Segment&lt;K,V&gt;)UNSAFE.getObjectVolatile(ss, u))</span><br><span class="line">                &#x3D;&#x3D; null) &#123; &#x2F;&#x2F; recheck</span><br><span class="line">                根据已有属性创建指定位置的Segment</span><br><span class="line">                Segment&lt;K,V&gt; s &#x3D; new Segment&lt;K,V&gt;(lf, threshold, tab);</span><br><span class="line">                while ((seg &#x3D; (Segment&lt;K,V&gt;)UNSAFE.getObjectVolatile(ss, u))</span><br><span class="line">                       &#x3D;&#x3D; null) &#123;</span><br><span class="line">                    if (UNSAFE.compareAndSwapObject(ss, u, null, seg &#x3D; s))</span><br><span class="line">                        break;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return seg;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>该方法重点在于拷贝了segments[0]，因此新创建的 Segment 与 segment[0] 的配置相同，由于多个线程都会有可能执行该方法，因此这里通过 UNSAFE 的一些原子性操作的方法做了多次的检查，到目前为止画图存档：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_17.png" style="zoom:50%"/>
+
+<p>现在“舞台”也有了，请开始你的表演，看下 Segment 的 put 方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">final V put(K key, int hash, V value, boolean onlyIfAbsent) &#123;</span><br><span class="line">    &#x2F;&#x2F;步骤① start</span><br><span class="line">    HashEntry&lt;K,V&gt; node &#x3D; tryLock() ? null :</span><br><span class="line">        scanAndLockForPut(key, hash, value);</span><br><span class="line">    &#x2F;&#x2F;步骤① end</span><br><span class="line">    V oldValue;</span><br><span class="line">    try &#123;</span><br><span class="line">        &#x2F;&#x2F;步骤② start</span><br><span class="line">        &#x2F;&#x2F;获取Segment中的HashEntry[]</span><br><span class="line">        HashEntry&lt;K,V&gt;[] tab &#x3D; table;</span><br><span class="line">        &#x2F;&#x2F;算出在HashEntry[]中的位置</span><br><span class="line">        int index &#x3D; (tab.length - 1) &amp; hash;</span><br><span class="line">        &#x2F;&#x2F;找到HashEntry[]中的指定位置的第一个节点</span><br><span class="line">        HashEntry&lt;K,V&gt; first &#x3D; entryAt(tab, index);</span><br><span class="line">        for (HashEntry&lt;K,V&gt; e &#x3D; first;;) &#123;</span><br><span class="line">            &#x2F;&#x2F;如果不为空，遍历这条链</span><br><span class="line">            if (e !&#x3D; null) &#123;</span><br><span class="line">                K k;</span><br><span class="line">                &#x2F;&#x2F;情况① 之前已存过，则替换原值</span><br><span class="line">                if ((k &#x3D; e.key) &#x3D;&#x3D; key ||</span><br><span class="line">                    (e.hash &#x3D;&#x3D; hash &amp;&amp; key.equals(k))) &#123;</span><br><span class="line">                    oldValue &#x3D; e.value;</span><br><span class="line">                    if (!onlyIfAbsent) &#123;</span><br><span class="line">                        e.value &#x3D; value;</span><br><span class="line">                        ++modCount;</span><br><span class="line">                    &#125;</span><br><span class="line">                    break;</span><br><span class="line">                &#125;</span><br><span class="line">                e &#x3D; e.next;</span><br><span class="line">            &#125;</span><br><span class="line">            else &#123;</span><br><span class="line">                &#x2F;&#x2F;情况② 另一个线程的准备工作</span><br><span class="line">                if (node !&#x3D; null)</span><br><span class="line">                    &#x2F;&#x2F;链表头插入方式</span><br><span class="line">                    node.setNext(first);</span><br><span class="line">                else &#x2F;&#x2F;情况③ 该位置为空，则新建一个节点(注意这里采用链表头插入方式)</span><br><span class="line">                    node &#x3D; new HashEntry&lt;K,V&gt;(hash, key, value, first);</span><br><span class="line">                &#x2F;&#x2F;键值对数量+1</span><br><span class="line">                int c &#x3D; count + 1;</span><br><span class="line">                &#x2F;&#x2F;如果键值对数量超过阈值</span><br><span class="line">                if (c &gt; threshold &amp;&amp; tab.length &lt; MAXIMUM_CAPACITY)</span><br><span class="line">                    &#x2F;&#x2F;扩容</span><br><span class="line">                    rehash(node);</span><br><span class="line">                else &#x2F;&#x2F;未超过阈值，直接放在指定位置</span><br><span class="line">                    setEntryAt(tab, index, node);</span><br><span class="line">                ++modCount;</span><br><span class="line">                count &#x3D; c;</span><br><span class="line">                &#x2F;&#x2F;插入成功返回null</span><br><span class="line">                oldValue &#x3D; null;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#x2F;&#x2F;步骤② end</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">        &#x2F;&#x2F;步骤③</span><br><span class="line">        &#x2F;&#x2F;解锁</span><br><span class="line">        unlock();</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;修改成功，返回原值</span><br><span class="line">    return oldValue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的 put 方法其实和 Java7 HashMap 里大致是一样的，只是多了加锁/解锁两步，也正因为这样才保证了同一时刻只有一个线程拥有修改的权限。按步骤分析下上面的流程：</p>
+<ul>
+<li>步骤① 执行 tryLock 方法获取锁，拿到锁返回 null ，没拿到锁执行 scanAndLockForPut 方法；</li>
+<li>步骤② 和 HashMap 里的那一套思路是一样的，不理解可以看下之前的文章介绍(情况②下面介绍)；</li>
+<li>步骤③   执行 unLock 方法解锁</li>
+</ul>
+<p>假设现在 Thread1 进来存值，前面没人来过，它可以成功拿到锁，根据计算，得出它要存的键值对应该放在 HashEntry[] 的 0 号位置，0 号位置为空，于是新建一个 HashEntry，并通过 setEntryAt() 方法，放在 0 号位置，然而还没等 Thread1 释放锁，系统的时间片切到了 Thread2 ，先画图存档</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_06.png" style="zoom:50%"/>
+
+<p>Thread2 也来存值，通过前面的计算，恰好 Thread2 也被定位到 segments[5]，接下来 Thread2 尝试获取锁，没有成功(Thread1 还未释放)，执行 scanAndLockForPut() 方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">private HashEntry&lt;K,V&gt; scanAndLockForPut(K key, int hash, V value) &#123;</span><br><span class="line">    &#x2F;&#x2F;通过Segment和hash值寻找匹配的HashEntry</span><br><span class="line">    HashEntry&lt;K,V&gt; first &#x3D; entryForHash(this, hash);</span><br><span class="line">    HashEntry&lt;K,V&gt; e &#x3D; first;</span><br><span class="line">    HashEntry&lt;K,V&gt; node &#x3D; null;</span><br><span class="line">    &#x2F;&#x2F;重试次数</span><br><span class="line">    int retries &#x3D; -1; &#x2F;&#x2F; negative while locating node</span><br><span class="line">    &#x2F;&#x2F;循环尝试获取锁</span><br><span class="line">    while (!tryLock()) &#123;</span><br><span class="line">        HashEntry&lt;K,V&gt; f; &#x2F;&#x2F; to recheck first below</span><br><span class="line">        &#x2F;&#x2F;步骤①</span><br><span class="line">        if (retries &lt; 0) &#123;</span><br><span class="line">            &#x2F;&#x2F;情况① 没找到，之前表中不存在</span><br><span class="line">            if (e &#x3D;&#x3D; null) &#123;</span><br><span class="line">                if (node &#x3D;&#x3D; null) &#x2F;&#x2F; speculatively create node</span><br><span class="line">                    &#x2F;&#x2F;新建 HashEntry 备用,retries改成0</span><br><span class="line">                    node &#x3D; new HashEntry&lt;K,V&gt;(hash, key, value, null);</span><br><span class="line">                retries &#x3D; 0;</span><br><span class="line">            &#125;</span><br><span class="line">            &#x2F;&#x2F;情况② 找到，刚好第一个节点就是，retries改成0</span><br><span class="line">            else if (key.equals(e.key))</span><br><span class="line">                retries &#x3D; 0;</span><br><span class="line">            &#x2F;&#x2F;情况③ 第一个节点不是，移到下一个，retries还是-1，继续找</span><br><span class="line">            else</span><br><span class="line">                e &#x3D; e.next;</span><br><span class="line">        &#125;</span><br><span class="line">        &#x2F;&#x2F;步骤②</span><br><span class="line">        &#x2F;&#x2F;尝试了MAX_SCAN_RETRIES次还没拿到锁，简直B了dog！</span><br><span class="line">        else if (++retries &gt; MAX_SCAN_RETRIES) &#123;</span><br><span class="line">            &#x2F;&#x2F;泉水挂机</span><br><span class="line">            lock();</span><br><span class="line">            break;</span><br><span class="line">        &#125;</span><br><span class="line">        &#x2F;&#x2F;步骤③</span><br><span class="line">        &#x2F;&#x2F;在MAX_SCAN_RETRIES次过程中，key对应的entry发生了变化，则从头开始</span><br><span class="line">        else if ((retries &amp; 1) &#x3D;&#x3D; 0 &amp;&amp;</span><br><span class="line">                 (f &#x3D; entryForHash(this, hash)) !&#x3D; first) &#123;</span><br><span class="line">            e &#x3D; first &#x3D; f; &#x2F;&#x2F; re-traverse if entry changed</span><br><span class="line">            retries &#x3D; -1;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return node;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过上面的注释分析可以看出，Thread2 虽然此刻没有权限修改，但是它也没闲着，利用等锁的这个时间，把自己要放的键值对在数组中哪个位置计算出来了，这样当 Thread2 一拿到锁就可以立马定位到具体位置操作，节省时间。上面的步骤③稍微解释下，比如 Thread2 通过查找得知自己要修改的值在 0 号位置，但在 Thread1 里面又把该值改到了 1 号位置，如果它还去 0 号操作那肯定出问题了，所以需要重新确定。</p>
+<p>假设 Thread2 put 值为(“亚索”，“98”)，对应 1 号位置，那么在 scanAndLockForPut 方法中对应情况①，画图存档：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_07.png" style="zoom:50%"/>
+
+<p>再回到 Segment put 方法中的情况②，当 Thread1 释放锁后，Thread2 持有锁，并准备把亚索放在 1 号位置，然而此时 Segment[5] 里的键值对数量 2 &gt; 阈值 1 ，所以调用 rehash() 方法扩容，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">private void rehash(HashEntry&lt;K,V&gt; node) &#123;</span><br><span class="line">    &#x2F;*</span><br><span class="line">     * Reclassify nodes in each list to new table.  Because we</span><br><span class="line">     * are using power-of-two expansion, the elements from</span><br><span class="line">     * each bin must either stay at same index, or move with a</span><br><span class="line">     * power of two offset. We eliminate unnecessary node</span><br><span class="line">     * creation by catching cases where old nodes can be</span><br><span class="line">     * reused because their next fields won&#39;t change.</span><br><span class="line">     * Statistically, at the default threshold, only about</span><br><span class="line">     * one-sixth of them need cloning when a table</span><br><span class="line">     * doubles. The nodes they replace will be garbage</span><br><span class="line">     * collectable as soon as they are no longer referenced by</span><br><span class="line">     * any reader thread that may be in the midst of</span><br><span class="line">     * concurrently traversing table. Entry accesses use plain</span><br><span class="line">     * array indexing because they are followed by volatile</span><br><span class="line">     * table write.</span><br><span class="line">     *&#x2F;</span><br><span class="line">    &#x2F;&#x2F;旧数组引用</span><br><span class="line">    HashEntry&lt;K,V&gt;[] oldTable &#x3D; table;</span><br><span class="line">    &#x2F;&#x2F;旧数组长度</span><br><span class="line">    int oldCapacity &#x3D; oldTable.length;</span><br><span class="line">    &#x2F;&#x2F;新数组长度为旧数组的2倍</span><br><span class="line">    int newCapacity &#x3D; oldCapacity &lt;&lt; 1;</span><br><span class="line">    &#x2F;&#x2F;修改新的阈值</span><br><span class="line">    threshold &#x3D; (int)(newCapacity * loadFactor);</span><br><span class="line">    &#x2F;&#x2F;创建新表</span><br><span class="line">    HashEntry&lt;K,V&gt;[] newTable &#x3D;</span><br><span class="line">        (HashEntry&lt;K,V&gt;[]) new HashEntry[newCapacity];</span><br><span class="line">    int sizeMask &#x3D; newCapacity - 1;</span><br><span class="line">    &#x2F;&#x2F;遍历旧表</span><br><span class="line">    for (int i &#x3D; 0; i &lt; oldCapacity ; i++) &#123;</span><br><span class="line">        HashEntry&lt;K,V&gt; e &#x3D; oldTable[i];</span><br><span class="line">        if (e !&#x3D; null) &#123;</span><br><span class="line">            HashEntry&lt;K,V&gt; next &#x3D; e.next;</span><br><span class="line">            &#x2F;&#x2F;确定在新表中的位置</span><br><span class="line">            int idx &#x3D; e.hash &amp; sizeMask;</span><br><span class="line">            &#x2F;&#x2F;情况① 链表只有一个节点，指定转移到新表指定位置</span><br><span class="line">            if (next &#x3D;&#x3D; null)   &#x2F;&#x2F;  Single node on list</span><br><span class="line">                newTable[idx] &#x3D; e;</span><br><span class="line">            else &#123; &#x2F;&#x2F; Reuse consecutive sequence at same slot</span><br><span class="line">                HashEntry&lt;K,V&gt; lastRun &#x3D; e;</span><br><span class="line">                int lastIdx &#x3D; idx;</span><br><span class="line">                for (HashEntry&lt;K,V&gt; last &#x3D; next;</span><br><span class="line">                     last !&#x3D; null;</span><br><span class="line">                     last &#x3D; last.next) &#123;</span><br><span class="line">                    &#x2F;&#x2F;情况② 扩容前后位置发生改变</span><br><span class="line">                    int k &#x3D; last.hash &amp; sizeMask;</span><br><span class="line">                    if (k !&#x3D; lastIdx) &#123;</span><br><span class="line">                        lastIdx &#x3D; k;</span><br><span class="line">                        lastRun &#x3D; last;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                &#x2F;&#x2F;将改变的键值对放到新表的对应位置</span><br><span class="line">                newTable[lastIdx] &#x3D; lastRun;</span><br><span class="line">                &#x2F;&#x2F; Clone remaining nodes</span><br><span class="line">                &#x2F;&#x2F;情况③ 把链表中剩下的节点拷到新表中</span><br><span class="line">                for (HashEntry&lt;K,V&gt; p &#x3D; e; p !&#x3D; lastRun; p &#x3D; p.next) &#123;</span><br><span class="line">                    V v &#x3D; p.value;</span><br><span class="line">                    int h &#x3D; p.hash;</span><br><span class="line">                    int k &#x3D; h &amp; sizeMask;</span><br><span class="line">                    HashEntry&lt;K,V&gt; n &#x3D; newTable[k];</span><br><span class="line">                    newTable[k] &#x3D; new HashEntry&lt;K,V&gt;(h, p.key, v, n);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;添加新的节点(链表头插入方式)</span><br><span class="line">    int nodeIndex &#x3D; node.hash &amp; sizeMask; &#x2F;&#x2F; add the new node</span><br><span class="line">    node.setNext(newTable[nodeIndex]);</span><br><span class="line">    newTable[nodeIndex] &#x3D; node;</span><br><span class="line">    table &#x3D; newTable;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>同样是扩容转移，这里的代码比 HashMap 中的 transfer 多了一些操作，在上上篇学习 HashMap 扩容可知，扩容后键值对的新位置要么和原位置一样，要么等于原位置 + 旧数组的长度，所以画个图来理解下上面代码这么写的原因：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_08.png" style="zoom:50%"/>
+
+<p>前提：当前 HashEntry[] 长度为 8 ，阈值为 8 * 0.75 = 6，所以 put 第 7 个键值对需要扩容 ，盖伦和亚索扩容前后位置不变，妖姬和卡特扩容后位置需要加上原数组长度，所以执行上面代码流程：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_09.png" style="zoom:50%"/>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_10.png" style="zoom:50%"/>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_11.png" style="zoom:50%"/>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_12.png" style="zoom:50%"/>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_13.png" style="zoom:50%"/>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_14.png" style="zoom:50%"/>
+
+<p>上面的代码先找出扩容前后需要转移的节点，先执行转移，然后再把该条链上剩下的节点转移，之所以这么写是起到复用的效果，注释中也说了，在使用默认阈值的情况下，只有大约 1/6 的节点需要被 clone 。注意到目前为止，可以看到无论是扩容转移还是新增节点，Java7 都是采用的头插入方式，流程图如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_15.png" style="zoom:50%"/>
+
+<p>相比之下，get 方法没有加锁/解锁的操作，代码比较简单就不分析了。</p>
+<h4 id="稍微说下-Java8"><a href="#稍微说下-Java8" class="headerlink" title="稍微说下 Java8"></a>稍微说下 Java8</h4><p>Java8 对比 Java7 有很大的不同，比如取消了 Segments 数组，允许并发扩容。</p>
+<p>先看下 ConcurrentHashMap 的初始化</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">public ConcurrentHashMap() &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>和 Java7 不一样，这里是个空方法，那么它具体的初始化操作呢？直接看下 put 方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line">public V put(K key, V value) &#123;</span><br><span class="line">    return putVal(key, value, false);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;** Implementation for put and putIfAbsent *&#x2F;</span><br><span class="line">final V putVal(K key, V value, boolean onlyIfAbsent) &#123;</span><br><span class="line">    &#x2F;&#x2F; key&#x2F;value不能为空！！！</span><br><span class="line">    if (key &#x3D;&#x3D; null || value &#x3D;&#x3D; null) throw new NullPointerException();</span><br><span class="line">    &#x2F;&#x2F;计算hash值</span><br><span class="line">    int hash &#x3D; spread(key.hashCode());</span><br><span class="line">    int binCount &#x3D; 0;</span><br><span class="line">    for (Node&lt;K,V&gt;[] tab &#x3D; table;;) &#123;</span><br><span class="line">        Node&lt;K,V&gt; f; int n, i, fh;</span><br><span class="line">        &#x2F;&#x2F;注释① 表为null则初始化</span><br><span class="line">        if (tab &#x3D;&#x3D; null || (n &#x3D; tab.length) &#x3D;&#x3D; 0)</span><br><span class="line">            tab &#x3D; initTable();</span><br><span class="line">        &#x2F;&#x2F;CAS方法判断指定位置是否为null，为空则通过创建新节点，通过CAS方法设置在指定位置</span><br><span class="line">        else if ((f &#x3D; tabAt(tab, i &#x3D; (n - 1) &amp; hash)) &#x3D;&#x3D; null) &#123;</span><br><span class="line">            if (casTabAt(tab, i, null,</span><br><span class="line">                         new Node&lt;K,V&gt;(hash, key, value, null)))</span><br><span class="line">                break;                   &#x2F;&#x2F; no lock when adding to empty bin</span><br><span class="line">        &#125;</span><br><span class="line">        &#x2F;&#x2F;当前节点正在扩容</span><br><span class="line">        else if ((fh &#x3D; f.hash) &#x3D;&#x3D; MOVED)</span><br><span class="line">            tab &#x3D; helpTransfer(tab, f);</span><br><span class="line">        &#x2F;&#x2F;指定位置不为空</span><br><span class="line">        else &#123;</span><br><span class="line">            V oldVal &#x3D; null;</span><br><span class="line">            &#x2F;&#x2F;注释② 加锁</span><br><span class="line">            synchronized (f) &#123;</span><br><span class="line">                if (tabAt(tab, i) &#x3D;&#x3D; f) &#123;</span><br><span class="line">                    &#x2F;&#x2F;节点是链表的情况</span><br><span class="line">                    if (fh &gt;&#x3D; 0) &#123;</span><br><span class="line">                        binCount &#x3D; 1;</span><br><span class="line">                        &#x2F;&#x2F;遍历整体链</span><br><span class="line">                        for (Node&lt;K,V&gt; e &#x3D; f;; ++binCount) &#123;</span><br><span class="line">                            K ek;</span><br><span class="line">                            &#x2F;&#x2F;如果已存在，替换原值</span><br><span class="line">                            if (e.hash &#x3D;&#x3D; hash &amp;&amp;</span><br><span class="line">                                ((ek &#x3D; e.key) &#x3D;&#x3D; key ||</span><br><span class="line">                                 (ek !&#x3D; null &amp;&amp; key.equals(ek)))) &#123;</span><br><span class="line">                                oldVal &#x3D; e.val;</span><br><span class="line">                                if (!onlyIfAbsent)</span><br><span class="line">                                    e.val &#x3D; value;</span><br><span class="line">                                break;</span><br><span class="line">                            &#125;</span><br><span class="line">                            Node&lt;K,V&gt; pred &#x3D; e;</span><br><span class="line">                            &#x2F;&#x2F;如果是新加节点，则以尾部插入实现添加</span><br><span class="line">                            if ((e &#x3D; e.next) &#x3D;&#x3D; null) &#123;</span><br><span class="line">                                pred.next &#x3D; new Node&lt;K,V&gt;(hash, key,</span><br><span class="line">                                                          value, null);</span><br><span class="line">                                break;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    &#x2F;&#x2F;节点是红黑树的情况</span><br><span class="line">                    else if (f instanceof TreeBin) &#123;</span><br><span class="line">                        Node&lt;K,V&gt; p;</span><br><span class="line">                        binCount &#x3D; 2;</span><br><span class="line">                        &#x2F;&#x2F;遍历红黑树</span><br><span class="line">                        if ((p &#x3D; ((TreeBin&lt;K,V&gt;)f).putTreeVal(hash, key,</span><br><span class="line">                                                       value)) !&#x3D; null) &#123;</span><br><span class="line">                            oldVal &#x3D; p.val;</span><br><span class="line">                            if (!onlyIfAbsent)</span><br><span class="line">                                p.val &#x3D; value;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    else if (f instanceof ReservationNode)</span><br><span class="line">                        throw new IllegalStateException(&quot;Recursive update&quot;);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            if (binCount !&#x3D; 0) &#123;</span><br><span class="line">                &#x2F;&#x2F;链表中节点个数超过8转成红黑树</span><br><span class="line">                if (binCount &gt;&#x3D; TREEIFY_THRESHOLD)</span><br><span class="line">                    treeifyBin(tab, i);</span><br><span class="line">                if (oldVal !&#x3D; null)</span><br><span class="line">                    return oldVal;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;注释③ 添加节点</span><br><span class="line">    addCount(1L, binCount);</span><br><span class="line">    return null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码有点长，第一次看很有可能引起身体不适，主要是因为引入了红黑树的判断和操作，以及线程安全的操作。同样key/value 为空会报空指针异常，这也是和 HashMap 一个明显的区别。</p>
+<h5 id="注释①"><a href="#注释①" class="headerlink" title="注释①"></a>注释①</h5><p>调用 initTable 初始化数组</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">private final Node&lt;K,V&gt;[] initTable() &#123;</span><br><span class="line">    Node&lt;K,V&gt;[] tab; int sc;</span><br><span class="line">    while ((tab &#x3D; table) &#x3D;&#x3D; null || tab.length &#x3D;&#x3D; 0) &#123;</span><br><span class="line">        &#x2F;&#x2F; sizeCtl小于0，当前线程让出执行权</span><br><span class="line">        if ((sc &#x3D; sizeCtl) &lt; 0)</span><br><span class="line">            Thread.yield(); &#x2F;&#x2F; lost initialization race; just spin</span><br><span class="line">        &#x2F;&#x2F;CAS 操作将 sizeCtl 值改为-1</span><br><span class="line">        else if (U.compareAndSwapInt(this, SIZECTL, sc, -1)) &#123;</span><br><span class="line">            try &#123;</span><br><span class="line">                if ((tab &#x3D; table) &#x3D;&#x3D; null || tab.length &#x3D;&#x3D; 0) &#123;</span><br><span class="line">                    int n &#x3D; (sc &gt; 0) ? sc : DEFAULT_CAPACITY;</span><br><span class="line">                    @SuppressWarnings(&quot;unchecked&quot;)</span><br><span class="line">                    &#x2F;&#x2F;默认创建大小为16的数组</span><br><span class="line">                    Node&lt;K,V&gt;[] nt &#x3D; (Node&lt;K,V&gt;[])new Node&lt;?,?&gt;[n];</span><br><span class="line">                    table &#x3D; tab &#x3D; nt;</span><br><span class="line">                    sc &#x3D; n - (n &gt;&gt;&gt; 2);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; finally &#123;</span><br><span class="line">                &#x2F;&#x2F;初始化完再改回来</span><br><span class="line">                sizeCtl &#x3D; sc;</span><br><span class="line">            &#125;</span><br><span class="line">            break;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return tab;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>put 方法并没有加锁，那么它是如何保证创建新表的时候并发安全呢？答案就是这里的 sizeCtl ，sizeCtl 默认值为 0 ，当一个线程初始化数组时，会将 sizeCtl 改成 -1，由于被 volatile 修饰，对于其他线程来说这个变化是可见的，上面代码看到后续线程判断 sizeCtl 小于0 就会让出执行权。</p>
+<h5 id="注释②"><a href="#注释②" class="headerlink" title="注释②"></a>注释②</h5><p>Java8 摒弃了 Segment，而是对数组中单个位置加锁。当指定位置节点不为 null 时，情况与 Java8 HashMap 操作类似，新节点的添加还是尾部插入方式。</p>
+<h5 id="注释③"><a href="#注释③" class="headerlink" title="注释③"></a>注释③</h5><p>不管是链表的还是红黑树，确定之后总的节点数会加 1，可能会引起扩容，Java8 ConcunrrentHashMap 支持并发扩容，之前扩容总是由一个线程将旧数组中的键值对转移到新的数组中，支持并发的话，转移所需要的时间就可以缩短了，当然相应的并发处理控制逻辑也就更复杂了，扩容转移通过 transfer 方法完成，Java8中该方法很长，感兴趣的可以看下源码。。。</p>
+<p>用一个图来表示 Java8 ConcurrentHashMap的样子</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/ConcurrentHashMap_16.png" style="zoom:50%"/>
+
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>通过分析源码对比了 HashMap 与 ConcurrentHashMap 的差别，以及 Java7 和 Java8上 ConcurrentHashMap 设计的不同，当然还有很多坑没有填，比如其中调用了很多 UNSAFE 的 CAS 方法，可以减少性能上的消耗，平时很少用，了解的比较少；以及红黑树的具体原理和实现，后续慢慢填。。。</p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

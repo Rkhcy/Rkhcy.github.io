@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>图解 RxJava2 - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="通过生活中的几个角色来学习 RxJava2 ：饭店、厨师、服务员、顾客。
+
+
+模拟一个情景：饭店有一个很火的套餐，顾客来店默认就要这个套餐(不存在服务员咨询顾客要什么的过程)，所以情况应该是这样的
+
+
+
+
+上面的漫画写成 RxJava2 就是很多入门文章中看到的：事件发起者（上游）
+12345678">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="图解 RxJava2"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/cover_rxjava1.png" alt="图解 RxJava2">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>图解 RxJava2</h1>
+      <hr>
+      <span class="date">2017-12-13</span>
+    </div>
+
+    <p>通过生活中的几个角色来学习 RxJava2 ：饭店、厨师、服务员、顾客。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_01.png" style="zoom:50%"/>
+
+<p>模拟一个情景：饭店有一个很火的套餐，顾客来店默认就要这个套餐(不存在服务员咨询顾客要什么的过程)，所以情况应该是这样的</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_02.png" style="zoom:50%"/>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_03.png" style="zoom:50%"/>
+
+<p>上面的漫画写成 RxJava2 就是很多入门文章中看到的：事件发起者（上游）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Observable&lt;String&gt; observable;</span><br><span class="line">observable &#x3D; Observable.create(new ObservableOnSubscribe&lt;String&gt;() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void subscribe(ObservableEmitter&lt;String&gt; e) throws Exception &#123;</span><br><span class="line">        System.out.println(&quot;服务员从厨师那取得 扁食&quot;);</span><br><span class="line">        e.onNext(&quot;扁食&quot;);</span><br><span class="line">        System.out.println(&quot;服务员从厨师那取得 拌面&quot;);</span><br><span class="line">        e.onNext(&quot;拌面&quot;);</span><br><span class="line">        System.out.println(&quot;服务员从厨师那取得 蒸饺&quot;);</span><br><span class="line">        e.onNext(&quot;蒸饺&quot;);</span><br><span class="line">        System.out.println(&quot;厨师告知服务员菜上好了&quot;);</span><br><span class="line">        e.onComplete();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>事件接收者（下游）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">Observer&lt;String&gt; observer &#x3D; new Observer&lt;String&gt;() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void onSubscribe(Disposable d) &#123;</span><br><span class="line">        System.out.println(&quot;来个沙县套餐！！！&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onNext(String s) &#123;</span><br><span class="line">        System.out.println(&quot;服务员端给顾客  &quot; + s);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onError(Throwable e) &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onComplete() &#123;</span><br><span class="line">        System.out.println(&quot;服务员告诉顾客菜上好了&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>建立联系</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">observable.subscribe(observer);</span><br></pre></td></tr></table></figure>
+
+<p> 打印如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">来个沙县套餐！！！</span><br><span class="line">服务员从厨师那取得 拌面</span><br><span class="line">服务员端给顾客  拌面</span><br><span class="line">服务员从厨师那取得 扁食</span><br><span class="line">服务员端给顾客  扁食</span><br><span class="line">服务员从厨师那取得 蒸饺</span><br><span class="line">服务员端给顾客  蒸饺</span><br><span class="line">厨师告知服务员菜上好了</span><br><span class="line">服务员告诉顾客菜上好了</span><br></pre></td></tr></table></figure>
+
+<p>下面把一些类代入角色结合源码分析，演员表</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_04.png" style="zoom:50%"/>
+
+
+
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><p>最初看源码的时候容易因为各个类名字起得很相似而看晕，因此先把涉及到的类之间的关系画出来</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_05.png" style="zoom:80%"/>
+
+<p>Observable 是个抽象类，其子类是 ObservableCreate ，如果把 Observable 比成饭店，那 ObservableCreate 就是沙县小吃，看下 Observable 的 create 方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public static &lt;T&gt; Observable&lt;T&gt; create(ObservableOnSubscribe&lt;T&gt; source) &#123;</span><br><span class="line">    ObjectHelper.requireNonNull(source, &quot;source is null&quot;);</span><br><span class="line">    return RxJavaPlugins.onAssembly(new ObservableCreate&lt;T&gt;(source));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Observable 的 create 方法只是将接收的 ObservableOnSubscribe 作为参数传递给子类 ObservableCreate 真正实例化</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public final class ObservableCreate&lt;T&gt; extends Observable&lt;T&gt; &#123;</span><br><span class="line">    final ObservableOnSubscribe&lt;T&gt; source;</span><br><span class="line"></span><br><span class="line">    public ObservableCreate(ObservableOnSubscribe&lt;T&gt; source) &#123;</span><br><span class="line">        this.source &#x3D; source;</span><br><span class="line">    &#125;    </span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面这些代码就是漫画的第一格：饭店要开张(Observable.create)，开张的前提是要有一个会做菜的厨师(new ObservableOnSubscribe)，接着饭店起名叫沙县小吃(new ObservableCreate)，并把这个厨师和沙县小吃建立联系(this.source = source)。厨师有了，但是他并没有立即开始做菜(ObservableOnSubscribe.subscribe())，这个也很好理解，现实生活中厨师也是这样，他做不做菜取决于饭店，毕竟是饭店给他开工资；而饭店是否让厨师做菜很大一个原因取决于有没有顾客上门，看下顾客：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_06.png" style="zoom:80%"/>
+
+<p>顾客没有什么套路，上菜就吃(onNext)，菜上完或菜出问题会有相应的提醒(onComplete/onError)，对应上面漫画2。接着看饭店接客 observable.subscribe(observer) 的源码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public final void subscribe(Observer&lt;? super T&gt; observer) &#123;</span><br><span class="line">    &#x2F;&#x2F;省略部分代码</span><br><span class="line">    subscribeActual(observer);</span><br><span class="line">    &#x2F;&#x2F;省略部分代码</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">protected abstract void subscribeActual(Observer&lt;? super T&gt; observer);</span><br></pre></td></tr></table></figure>
+
+<p> Observable (饭店) 的 subscribe 方法又会调用 subscribeActual 方法，该方法是个抽象方法，具体实现在子类，看看子类 ObservableCreate (沙县小吃) </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">protected void subscribeActual(Observer&lt;? super T&gt; observer) &#123;</span><br><span class="line">    &#x2F;&#x2F;步骤①</span><br><span class="line">    CreateEmitter&lt;T&gt; parent &#x3D; new CreateEmitter&lt;T&gt;(observer);</span><br><span class="line">    &#x2F;&#x2F;步骤②</span><br><span class="line">    observer.onSubscribe(parent);</span><br><span class="line"></span><br><span class="line">    try &#123;</span><br><span class="line">        &#x2F;&#x2F;步骤③</span><br><span class="line">        source.subscribe(parent);</span><br><span class="line">    &#125; catch (Throwable ex) &#123;</span><br><span class="line">        Exceptions.throwIfFatal(ex);</span><br><span class="line">        parent.onError(ex);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>先看下涉及到的类以及所属关系</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_07.png" style="zoom:80%"/>
+
+<p>步骤① Emitter 翻译为发射器，这里名字起得也很形象 CreateEmitter (创建发射器) ，即对应服务员，CreateEmitter 创建的时候接收 Observer，就像一个服务员接待一个顾客一样(对应漫画3服务员说话)</p>
+<p>步骤② 执行 onSubscribe 方法并接收 CreateEmitter ，所以看到 log 中最先打印该方法的内容，就像顾客认准之后自己的菜是由这个服务员上的(对应漫画3顾客说话)</p>
+<p>步骤③ 调用 ObservableOnSubscribe.subscribe ，并接收 CreateEmitter ，就像厨师和该服务员建立联系，之后厨师做的菜都由该服务员端出去。上什么菜取决于 ObservableOnSubscribe.subscribe 中的实现。</p>
+<p>分析到这里发现 CreateEmitter (服务员) 起到枢纽作用，看下代码中 e.onNext/e.onComplete 的实现</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">public void onNext(T t) &#123;</span><br><span class="line">    if (t &#x3D;&#x3D; null) &#123;</span><br><span class="line">        onError(new NullPointerException(&quot;...&quot;));</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line">    if (!isDisposed()) &#123;</span><br><span class="line">        observer.onNext(t);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public void onComplete() &#123;</span><br><span class="line">    if (!isDisposed()) &#123;</span><br><span class="line">        try &#123;</span><br><span class="line">            observer.onComplete();</span><br><span class="line">        &#125; finally &#123;</span><br><span class="line">            dispose();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>onNext 中首先判空，服务员端个空盘子出来要被顾客锤成麻瓜；接着发送之前需要执行 isDisposed() 判断，可以理解成顾客是否还需要菜，默认情况下是需要的(!isDisposed() 为 true )，当执行完 onComplete() 方法后会执行 dispose() ，表明顾客不再需要菜了，后续的菜服务员不会再端上来给顾客了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">Observer&lt;String&gt; observer &#x3D; new Observer&lt;String&gt;() &#123;</span><br><span class="line">    Disposable disposable;</span><br><span class="line">    @Override</span><br><span class="line">    public void onSubscribe(Disposable d) &#123;</span><br><span class="line">        this.disposable &#x3D; d;</span><br><span class="line">        System.out.println(&quot;来个沙县套餐！！！&quot;);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onNext(String s) &#123;</span><br><span class="line">        if (s.equals(&quot;拌面&quot;)) &#123;</span><br><span class="line">            disposable.dispose();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(&quot;服务员端给顾客  &quot; + s);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onError(Throwable e) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onComplete() &#123;</span><br><span class="line">        System.out.println(&quot;服务员告诉顾客菜上好了&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>打印如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">来个沙县套餐！！！</span><br><span class="line">服务员从厨师那取得 拌面</span><br><span class="line">服务员端给顾客  拌面</span><br><span class="line">服务员从厨师那取得 扁食</span><br><span class="line">服务员从厨师那取得 蒸饺</span><br><span class="line">厨师告知服务员菜上好了</span><br></pre></td></tr></table></figure>
+
+<p>从上面可以看到一旦执行完 Disposable.dispose() 方法，顾客和服务员就没有后续交流了，就像 Disposable 翻译的那样「一次性」，理解成顾客对服务员说「后续的菜都别上了，你也不要再出现在我面前」；但是服务员和厨师的交流还是保持着，默认情况下厨师并不知道顾客不需要菜了，因此他还是继续做菜，然后交给服务员端出去。当然我们也可以在厨师做下一道菜的之前，判断下顾客还要不要：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">Observable&lt;String&gt; observable;</span><br><span class="line">observable &#x3D; Observable.create(new ObservableOnSubscribe&lt;String&gt;() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void subscribe(ObservableEmitter&lt;String&gt; e) throws Exception &#123;</span><br><span class="line">        if (!e.isDisposed()) &#123;</span><br><span class="line">            System.out.println(&quot;服务员从厨师那取得 拌面&quot;);</span><br><span class="line">            e.onNext(&quot;拌面&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">        if (!e.isDisposed()) &#123;</span><br><span class="line">            System.out.println(&quot;服务员从厨师那取得 扁食&quot;);</span><br><span class="line">            e.onNext(&quot;扁食&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">        if (!e.isDisposed()) &#123;</span><br><span class="line">            System.out.println(&quot;服务员从厨师那取得 蒸饺&quot;);</span><br><span class="line">            e.onNext(&quot;蒸饺&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">        if (!e.isDisposed()) &#123;</span><br><span class="line">            System.out.println(&quot;厨师告知服务员菜上好了&quot;);</span><br><span class="line">            e.onComplete();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>打印如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">来个沙县套餐！！！</span><br><span class="line">服务员从厨师那取得 拌面</span><br><span class="line">服务员端给顾客  拌面</span><br></pre></td></tr></table></figure>
+
+<p>再看下另一种情况</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Observable&lt;String&gt; observable;</span><br><span class="line">observable &#x3D; Observable.create(new ObservableOnSubscribe&lt;String&gt;() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void subscribe(ObservableEmitter&lt;String&gt; e) throws Exception &#123;</span><br><span class="line">        System.out.println(&quot;服务员从厨师那取得 拌面&quot;);</span><br><span class="line">        e.onNext(&quot;拌面&quot;);</span><br><span class="line">        System.out.println(&quot;服务员从厨师那取得 扁食&quot;);</span><br><span class="line">        e.onNext(&quot;扁食&quot;);</span><br><span class="line">        System.out.println(&quot;服务员从厨师那取得 蒸饺&quot;);</span><br><span class="line">        e.onNext(&quot;蒸饺&quot;);</span><br><span class="line">        System.out.println(&quot;厨师告知服务员菜上好了&quot;);</span><br><span class="line">        e.onComplete();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line">observable.subscribe();</span><br></pre></td></tr></table></figure>
+
+<p>打印如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">服务员从厨师那取得 拌面</span><br><span class="line">服务员从厨师那取得 扁食</span><br><span class="line">服务员从厨师那取得 蒸饺</span><br><span class="line">厨师告知服务员菜上好了</span><br></pre></td></tr></table></figure>
+
+<p>上面分析了要有顾客厨师才会做菜，这都没顾客怎么也做菜呢？看下源码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public final Disposable subscribe() &#123;</span><br><span class="line">    return subscribe(Functions.emptyConsumer(), Functions.ON_ERROR_MISSING,</span><br><span class="line">            Functions.EMPTY_ACTION, Functions.emptyConsumer());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public final Disposable subscribe(Consumer&lt;? super T&gt; onNext, </span><br><span class="line">        Consumer&lt;? super Throwable&gt; onError,</span><br><span class="line">        Action onComplete, Consumer&lt;? super Subscription&gt; onSubscribe) &#123;</span><br><span class="line">        </span><br><span class="line">    LambdaSubscriber&lt;T&gt; ls; &#x2F;&#x2F;默认顾客</span><br><span class="line">    ls &#x3D; new LambdaSubscriber&lt;T&gt;(onNext, onError, onComplete, onSubscribe);</span><br><span class="line"></span><br><span class="line">    subscribe(ls);</span><br><span class="line"></span><br><span class="line">    return ls;</span><br><span class="line"></span><br><span class="line">public final void subscribe(Observer&lt;? super T&gt; observer) &#123;</span><br><span class="line">    subscribeActual(observer);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">protected abstract void subscribeActual(Observer&lt;? super T&gt; observer);</span><br></pre></td></tr></table></figure>
+
+<p>原来系统会默认创建一个 LambdaObserver(默认顾客) ，服务员从厨师那端的菜会传给这个顾客。所以可以看出厨师做不做菜只取决于饭店(Observable.subscribe)，后面的流程和上面分析的一致。另外上面的代码还出现了Consumer、Action类，这些类里也有对事件的处理，可以理解成顾客选择接收服务员的哪些信息，在 functions 包下还有其他实现</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_08.png" style="zoom:50%"/>
+
+<p>subscribe() 有下面几个重载方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;顾客只关心上什么菜</span><br><span class="line">public final Disposable subscribe() &#123;&#125;</span><br><span class="line">public final Disposable subscribe(Consumer&lt;? super T&gt; onNext) &#123;&#125;</span><br><span class="line">    </span><br><span class="line">&#x2F;&#x2F;顾客关心上什么菜以及菜是不是出问题 </span><br><span class="line">public final Disposable subscribe(Consumer&lt;? super T&gt; onNext, </span><br><span class="line">    Consumer&lt;? super Throwable&gt; onError) &#123;&#125; </span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;顾客关心上什么菜、菜是不是有问题、菜是不是上完了   </span><br><span class="line">public final Disposable subscribe(Consumer&lt;? super T&gt; onNext, </span><br><span class="line">    Consumer&lt;? super Throwable&gt; onError, Action onComplete) &#123;&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;顾客关心上什么菜、菜是不是有问题、菜是不是上完了、</span><br><span class="line">&#x2F;&#x2F;onSubscribe()中可以获取Disposable引用，之后选择告诉服务员是否继续上菜</span><br><span class="line">public final Disposable subscribe(Consumer&lt;? super T&gt; onNext, </span><br><span class="line">    Consumer&lt;? super Throwable&gt; onError,  </span><br><span class="line">    Action onComplete, Consumer&lt;? super Disposable&gt; onSubscribe) &#123;&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;由顾客自己决定关心哪些事件，和上一条效果一样</span><br><span class="line">public final void subscribe(Observer&lt;? super T&gt; observer) &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果顾客只关心上什么菜，我们可以这么写：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Consumer&lt;String&gt; consumer &#x3D; new Consumer&lt;String&gt;() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void accept(String s) throws Exception &#123;</span><br><span class="line">        System.out.println(&quot;服务员端给顾客  &quot; + s);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">observable.subscribe(consumer);</span><br></pre></td></tr></table></figure>
+
+<p>打印如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">服务员从厨师那取得 拌面</span><br><span class="line">服务员端给顾客  拌面</span><br><span class="line">服务员从厨师那取得 扁食</span><br><span class="line">服务员端给顾客  扁食</span><br><span class="line">服务员从厨师那取得 蒸饺</span><br><span class="line">服务员端给顾客  蒸饺</span><br><span class="line">厨师告知服务员菜上好了</span><br></pre></td></tr></table></figure>
+
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

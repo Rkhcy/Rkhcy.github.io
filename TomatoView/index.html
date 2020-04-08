@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>TomatoView - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="最近跟着扔物线的自定义 View 教程重新复习了一波基础，但是 API 这种东西如果不用很容易就忘了，趁大脑还没触发 GC 之前，最好的记忆方式就是撸个 Demo 出来。IOS 上有一款个人很喜欢的简约 TODO 应用叫极简待办，它的番茄时钟交互很适合用来练手。
+先看下 IOS 的效果图长啥样
+
+
+">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="TomatoView"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/clock.jpg" alt="TomatoView">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>TomatoView</h1>
+      <hr>
+      <span class="date">2017-09-18</span>
+    </div>
+
+    <p>最近跟着<a href="http://hencoder.com/" target="_blank" rel="noopener">扔物线</a>的自定义 View 教程重新复习了一波基础，但是 API 这种东西如果不用很容易就忘了，趁大脑还没触发 GC 之前，最好的记忆方式就是撸个 Demo 出来。IOS 上有一款个人很喜欢的简约 TODO 应用叫极简待办，它的番茄时钟交互很适合用来练手。</p>
+<p>先看下 IOS 的效果图长啥样</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:50%"
+src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/tomato.gif" style="zoom:50%">
+</center>
+
+
+
+<p>功能</p>
+<ul>
+<li>一个默认黑色的圆，一个灰色的圆，随着倒计时减少，灰色圆的弧度越来越大</li>
+<li>手指在圆圈内滑动可以调整时间</li>
+</ul>
+<p>一步步来，先画一个黑圆以及显示时间文本，传入一个时间值后，可以实现倒计时功能。实现倒计时需要用到 CountDownTimer，因此只要在该类的 onTick 中不断重绘就行了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public void start()&#123;</span><br><span class="line">        new CountDownTimer(time * 1000 + 1000, 1000) &#123;</span><br><span class="line">            @Override</span><br><span class="line">            public void onTick(long millisUntilFinished) &#123;</span><br><span class="line">                time &#x3D; (time * 1000 - 1000) &#x2F; 1000;</span><br><span class="line">                textTime &#x3D; time + &quot;&quot;;</span><br><span class="line">                invalidate();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            @Override</span><br><span class="line">            public void onFinish() &#123;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;.start();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过 setTime 方法提前设置一分钟，运行后可以看到界面开始倒计时，</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:50%"
+src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/tomato2.gif" style="zoom:50%">
+</center>
+
+<p>接着，开始倒计时后，画灰色的圆弧，这里需要用到动画 ValueAnimator，通过 ValueAnimator 的getAnimatedValue() 方法获取实时的动画值，计算灰色圆弧扫过的区域，修改 start() 方法如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">public void start()&#123;</span><br><span class="line">    ValueAnimator valueAnimator &#x3D; ValueAnimator.ofFloat(0, 1.0f);</span><br><span class="line">    valueAnimator.setDuration(time * 1000);</span><br><span class="line">    valueAnimator.setInterpolator(new LinearInterpolator());</span><br><span class="line">    valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() &#123;</span><br><span class="line">        @Override</span><br><span class="line">        public void onAnimationUpdate(ValueAnimator animation) &#123;</span><br><span class="line">            sweepVelocity &#x3D; (float) animation.getAnimatedValue();</span><br><span class="line">            invalidate();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    valueAnimator.start();</span><br><span class="line"></span><br><span class="line">    new CountDownTimer(time * 1000 + 1000, 1000) &#123;</span><br><span class="line">        @Override</span><br><span class="line">        public void onTick(long millisUntilFinished) &#123;</span><br><span class="line">            time &#x3D; (time * 1000 - 1000) &#x2F; 1000;</span><br><span class="line">            textTime &#x3D; time + &quot;&quot;;</span><br><span class="line">            invalidate();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void onFinish() &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>onDraw 中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mRectF.set(centerX - radius, centerY - radius, centerX + radius, centerY + radius);</span><br><span class="line">canvas.drawArc(mRectF, START_ANGLE, 360 * sweepVelocity, false, mPaint);</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:50%"
+src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/tomato3.gif" style="zoom:50%">
+</center>
+
+<p>时间显示的有点挫，格式化下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">private String formatCountdownTime(int countdownTime) &#123;</span><br><span class="line">    StringBuilder sb &#x3D; new StringBuilder();</span><br><span class="line">    int minute &#x3D; countdownTime &#x2F; 60;</span><br><span class="line">    int second &#x3D; countdownTime - 60 * minute;</span><br><span class="line">    if (minute &lt; 10) &#123;</span><br><span class="line">        sb.append(&quot;0&quot; + minute + &quot;:&quot;);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        sb.append(minute + &quot;:&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    if (second &lt; 10) &#123;</span><br><span class="line">        sb.append(&quot;0&quot; + second);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        sb.append(second);</span><br><span class="line">    &#125;</span><br><span class="line">    return sb.toString();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:50%"
+src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/tomato4.gif" style="zoom:50%">
+</center>
+
+<p>接下来就是实现上下滑动调整时间了，思路如下：</p>
+<p>先确定一个最大值，这里取 60 分钟，我们可以获取到手指按下和滑动的坐标，如果这两个点的纵坐标差值刚好等于直径，那么显示的时间取最大值，其余的就在 0-60 的区间内，在滑动过程中执行重绘。</p>
+<p>重写 onTouchEvent 方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public boolean onTouchEvent(MotionEvent event) &#123;</span><br><span class="line">    float x &#x3D; event.getX();</span><br><span class="line">    float y &#x3D; event.getY();</span><br><span class="line">    switch (event.getActionMasked()) &#123;</span><br><span class="line">        case MotionEvent.ACTION_DOWN:</span><br><span class="line">            touchX &#x3D; x;</span><br><span class="line">            touchY &#x3D; y;</span><br><span class="line">            break;</span><br><span class="line">        case MotionEvent.ACTION_MOVE:</span><br><span class="line">            offsetX &#x3D; x - touchX;</span><br><span class="line">            offsetY &#x3D; y - touchY;</span><br><span class="line">            time &#x3D; (int) (offsetY &#x2F; 2 &#x2F; radius * MAX_TIME);</span><br><span class="line">            if (time &lt;&#x3D; 0) &#123;</span><br><span class="line">                time &#x3D; 0;</span><br><span class="line">            &#125;</span><br><span class="line">            textTime &#x3D; formatTime(time);</span><br><span class="line">            countdownTime &#x3D; time * 60;</span><br><span class="line">            invalidate();</span><br><span class="line">            break;</span><br><span class="line">    &#125;</span><br><span class="line">    return true;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行效果如下：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:50%"
+src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/tomato5.gif" style="zoom:50%">
+</center>
+
+<p>时间是可以调整了，但是当前没有对滑动范围限制，看到最大时间超出 60 分钟，处理的思路很简单，就是判断点是否在圆内，那怎么判断触摸点是否在圆内呢？平面内两点间距离公式和半径比较即可。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">private boolean isContained(float x, float y) &#123;</span><br><span class="line">    if (Math.sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY)) &gt; radius) &#123;</span><br><span class="line">        return false;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        return true;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最终效果：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:50%"
+src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/tomato7.gif" style="zoom:50%">
+</center>
+
+
+
+<p><a href="https://github.com/Rkhcy/TomatoClockView" target="_blank" rel="noopener">github传送门</a></p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

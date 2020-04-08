@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>Android Transition (一) - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="Android 4.4.2 (API level 19) 引入 Transition 框架，之后很多 APP 上都使用该框架做出很酷炫的效果，如 Google Play Newsstand app
+
+
+还有 github 上很火的 plaid
+
+
+在 app 中适当得使用上 Transition 能">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="Android Transition (一)"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/cover_transition1.jpg" alt="Android Transition (一)">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>Android Transition (一)</h1>
+      <hr>
+      <span class="date">2017-09-21</span>
+    </div>
+
+    <p>Android 4.4.2 (API level 19) 引入 Transition 框架，之后很多 APP 上都使用该框架做出很酷炫的效果，如 Google Play Newsstand app</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition_app1.gif" style="zoom:75%"/>
+
+<p>还有 github 上很火的 <a href="https://github.com/nickbutcher/plaid" target="_blank" rel="noopener">plaid</a></p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/plaid_demo.gif" style="zoom:75%"/>
+
+<p>在 app 中适当得使用上 Transition 能带来较好的用户体验，<a href="https://www.youtube.com/watch?time_continue=1007&v=S3H7nJ4QaD8" target="_blank" rel="noopener">视频</a> 中介绍了该框架的基本使用以及其中核心的一些类和方法，只有学会这些基本的 API 才能在之后的 Activity/Fragment 过渡定制一些自己想要的效果。先看官网的一张关系图</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transitions_1.0.png"/>
+
+<p>图中有三个核心的类，分别是Scene、Transition和TransitionManager，下面对这个三个核心类展开分析。</p>
+<h3 id="Scene"><a href="#Scene" class="headerlink" title="Scene"></a>Scene</h3><p>Scene 场景，用于保存布局中所有 View 的属性值，创建 Scene 的方式可以通过 getSceneForLayout 方法getSceneForLayout(ViewGroup sceneRoot, int layoutId, Context context)</p>
+<p>比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mScene0 &#x3D; Scene.getSceneForLayout(mSceneRoot, R.layout.scene0, getContext());</span><br><span class="line">mScene1 &#x3D; Scene.getSceneForLayout(mSceneRoot, R.layout.scene1, getContext());</span><br></pre></td></tr></table></figure>
+
+<p>也可以直接 new Scene(ViewGroup sceneRoot, View layout)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">View view0 &#x3D; inflater.inflate(R.layout.scene0, container, false);</span><br><span class="line">View view1 &#x3D; inflater.inflate(R.layout.scene1, container, false);</span><br><span class="line">mScene0 &#x3D; new Scene(mSceneRoot, view0);</span><br><span class="line">mScene1 &#x3D; new Scene(mSceneRoot, view1);</span><br></pre></td></tr></table></figure>
+
+<p>两种方式都需要传 SceneRoot ，即该场景的根节点。</p>
+<h3 id="Transition"><a href="#Transition" class="headerlink" title="Transition"></a>Transition</h3><img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transitions_1.2.png" style="zoom:40%"/>
+
+<p><a href="https://developer.android.com/training/transitions/transitions.html" target="_blank" rel="noopener">Transition</a> 过渡动画，前面创建了两个场景，分别保存了视图的一些属性，比如 Visibility、position 等，Transition 就是对于这些属性值的改变定义过渡的效果。从上图可以看到系统内置了一些常用的 Transition，Transition 的创建可以通过加载xml，如：</p>
+<p>res/transition/fade_transition.xml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;fade xmlns:android&#x3D;&quot;http:&#x2F;&#x2F;schemas.android.com&#x2F;apk&#x2F;res&#x2F;android&quot; &#x2F;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>然后在代码中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Transition mFadeTransition &#x3D;</span><br><span class="line">        TransitionInflater.from(this).</span><br><span class="line">        inflateTransition(R.transition.fade_transition);</span><br></pre></td></tr></table></figure>
+
+<p>或者直接在代码中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Transition mFadeTransition &#x3D; new Fade();</span><br></pre></td></tr></table></figure>
+
+<h3 id="TransitionManager"><a href="#TransitionManager" class="headerlink" title="TransitionManager"></a>TransitionManager</h3><p><a href="https://developer.android.com/reference/android/support/transition/TransitionManager.html" target="_blank" rel="noopener">TransitionManeger </a>用于将 Scene 和 Transition 联系起来，它提供了一系列的方法如 setTransition(Scene fromScene, Scene toScene, Transition transition) 指明起始场景和结束场景、他们的过渡动画是什么，go(Scene scene, Transition transition)，到指定的场景所使用的过渡动画是什么，beginDelayedTransition(ViewGroup sceneRoot, Transition transition)，在当前场景到下一帧的过渡效果是什么。比如这里使用 go() 方法，效果:</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.3.gif" style="zoom:50%"/>
+
+<p>注意这里两个 Scene 中红绿两个方块除了位置和大小不一样，id 是一致的，transition 记录下两个 Scene 前后属性值，根据属性值的改变执行过渡动画，默认情况下对 SceneRoot 下的所有 View 执行动画效果，我们可以通过Transition.addTarget 和 removeTarget 方法选择性添加或移除执行动画的 View 。</p>
+<h3 id="常用-API"><a href="#常用-API" class="headerlink" title="常用 API"></a>常用 API</h3><p>有时候我们只想改变当前已展示的视图层级中 View 的状态，可以通过 beginDelayedTransition 实现，下面列举系统内置的 Transition 的使用。</p>
+<h4 id="AutoTransition"><a href="#AutoTransition" class="headerlink" title="AutoTransition"></a>AutoTransition</h4><p><a href="https://developer.android.com/reference/android/support/transition/AutoTransition.html" target="_blank" rel="noopener">AutoTransition</a> 默认的动画效果，对应 xml tag 为<code>autoTransition</code></p>
+<p>其实是以下几个动画组合顺序执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;transitionSet xmlns:android&#x3D;&quot;http:&#x2F;&#x2F;schemas.android.com&#x2F;apk&#x2F;res&#x2F;android&quot;</span><br><span class="line">    android:transitionOrdering&#x3D;&quot;sequential&quot;&gt;</span><br><span class="line">    &lt;fade android:fadingMode&#x3D;&quot;fade_out&quot; &#x2F;&gt;</span><br><span class="line">    &lt;changeBounds &#x2F;&gt;</span><br><span class="line">    &lt;fade android:fadingMode&#x3D;&quot;fade_in&quot; &#x2F;&gt;</span><br><span class="line">&lt;&#x2F;transitionSet&gt;</span><br></pre></td></tr></table></figure>
+
+<p>在代码中使用：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new AutoTransition());</span><br><span class="line">if (mTextView.getVisibility() !&#x3D; View.VISIBLE) &#123;</span><br><span class="line">    mTextView.setVisibility(View.VISIBLE);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    mTextView.setVisibility(View.GONE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.4.gif" style="zoom:50%"/>
+
+<h4 id="ChangeBounds"><a href="#ChangeBounds" class="headerlink" title="ChangeBounds"></a>ChangeBounds</h4><p><a href="https://developer.android.com/reference/android/support/transition/ChangeBounds.html" target="_blank" rel="noopener">ChangeBounds</a> 对应 xml tag为<code>changeBounds</code>，根据前后布局界限的变化执行动画</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new ChangeBounds());</span><br><span class="line">FrameLayout.LayoutParams lp &#x3D; (FrameLayout.LayoutParams) mTarget.getLayoutParams();</span><br><span class="line">if ((lp.gravity &amp; Gravity.START) &#x3D;&#x3D; Gravity.START) &#123;</span><br><span class="line">    lp.gravity &#x3D; Gravity.BOTTOM | Gravity.END;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    lp.gravity &#x3D; Gravity.TOP | Gravity.START;</span><br><span class="line">&#125;</span><br><span class="line">mTarget.setLayoutParams(lp);</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.6.gif" style="zoom:50%"/>
+
+<h4 id="ChangeClipBounds"><a href="#ChangeClipBounds" class="headerlink" title="ChangeClipBounds"></a>ChangeClipBounds</h4><p><a href="https://developer.android.com/reference/android/support/transition/ChangeClipBounds.html" target="_blank" rel="noopener">ChangeClipBounds</a> 对应 xml tag为<code>changeClipBounds</code>，作用对象：View 的 getClipBounds() 值</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Rect BOUNDS &#x3D; new Rect(20, 20, 100, 100);</span><br><span class="line">TransitionManager.beginDelayedTransition(mRoot, new ChangeClipBounds());</span><br><span class="line">if (BOUNDS.equals(ViewCompat.getClipBounds(mImageView))) &#123;</span><br><span class="line">    ViewCompat.setClipBounds(mImageView, null);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    ViewCompat.setClipBounds(mImageView, BOUNDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.5.gif" style="zoom:50%"/>
+
+<h4 id="ChangeImageTransform"><a href="#ChangeImageTransform" class="headerlink" title="ChangeImageTransform"></a>ChangeImageTransform</h4><p>对应 xml tag为<code>changeImageTransform</code>，作用对象：ImageView 的 matrix</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new ChangeImageTransform());</span><br><span class="line">mImageView.setScaleType(ImageView.ScaleType.XXX);</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.7.gif" style="zoom:50%"/>
+
+<h4 id="ChangeScroll"><a href="#ChangeScroll" class="headerlink" title="ChangeScroll"></a>ChangeScroll</h4><p>对应 xml tag为<code>changeScroll</code>，作用对象：View 的 scroll 属性值</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new ChangeScroll());</span><br><span class="line">mTarget.scrollBy(-100, -100);</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.8.gif" style="zoom:50%"/>
+
+<h4 id="ChangeTransform"><a href="#ChangeTransform" class="headerlink" title="ChangeTransform"></a>ChangeTransform</h4><p>对应 xml tag 为changeTransform，作用对象：View 的 scale 和 rotation</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new ChangeTransform());</span><br><span class="line">if (mContainer2.getChildCount() &gt; 0) &#123;</span><br><span class="line">    mContainer2.removeAllViews();</span><br><span class="line">    showRedSquare(mContainer1);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    mContainer1.removeAllViews();</span><br><span class="line">    showRedSquare(mContainer2);</span><br><span class="line">    mContainer2.getChildAt(0).setRotation(45);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">private void showRedSquare(FrameLayout container) &#123;</span><br><span class="line">    final View view &#x3D; LayoutInflater.from(getContext())</span><br><span class="line">            .inflate(R.layout.red_square, container, false);</span><br><span class="line">    container.addView(view);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.9.gif" style="zoom:50%"/>
+
+<h4 id="Explode"><a href="#Explode" class="headerlink" title="Explode"></a>Explode</h4><p>对应 xml tag为<code>explode</code>，作用对象：View 的 Visibility</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new Explode());</span><br><span class="line">int vis &#x3D; mViews.get(0).getVisibility() &#x3D;&#x3D; View.VISIBLE ? View.GONE : View.VISIBLE;</span><br><span class="line">for (View view : mViews) &#123;</span><br><span class="line">    view.setVisibility(vis);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_10.gif" style="zoom:50%"/>
+
+<h4 id="Fade"><a href="#Fade" class="headerlink" title="Fade"></a>Fade</h4><p>对应 xml tag为<code>fade</code>，作用对象：View 的 Visibility</p>
+<p>可以在初始化时指定 IN 或者 OUT 分别对应淡入和淡出，也可以通过 fade.setMode 方法设置，若不指定默认为淡入淡出效果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new Fade());</span><br><span class="line">int vis &#x3D; mViews.get(0).getVisibility() &#x3D;&#x3D; View.VISIBLE ? View.GONE : View.VISIBLE;</span><br><span class="line">for (View view : mViews) &#123;</span><br><span class="line">    view.setVisibility(vis);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.11.gif" style="zoom:50%"/>
+
+
+
+<h4 id="Slide"><a href="#Slide" class="headerlink" title="Slide"></a>Slide</h4><p>对应 xml tag 为<code>slide</code>，作用对象：View 的 Visibility</p>
+<p>可以初始化时传入 Gravity.XX，也可以通过 slide.setSlideEdge 方法设置，默认方向为 Gravity.BOTTOM</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">TransitionManager.beginDelayedTransition(mRoot, new Slide());</span><br><span class="line">int vis &#x3D; mViews.get(0).getVisibility() &#x3D;&#x3D; View.VISIBLE ? View.GONE : View.VISIBLE;</span><br><span class="line">for (View view : mViews) &#123;</span><br><span class="line">    view.setVisibility(vis);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.12.gif" style="zoom:50%"/>
+
+<h4 id="TransitionSet"><a href="#TransitionSet" class="headerlink" title="TransitionSet"></a>TransitionSet</h4><p>对应 xml tag 为<code>transitionSet</code></p>
+<p>可以在代码中创建 transitionSet 如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mTransition &#x3D; new TransitionSet();</span><br><span class="line">mTransition.addTransition(new ChangeImageTransform());</span><br><span class="line">mTransition.addTransition(new ChangeTransform());</span><br><span class="line">TransitionManager.beginDelayedTransition(mOuterFrame, mTransition);</span><br><span class="line">if (mInnerFrame.getChildCount() &gt; 0) &#123;</span><br><span class="line">    mInnerFrame.removeAllViews();</span><br><span class="line">    addImageView(mOuterFrame, ImageView.ScaleType.CENTER_CROP, mPhotoSize);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    mOuterFrame.removeViewAt(1);</span><br><span class="line">    addImageView(mInnerFrame, ImageView.ScaleType.FIT_XY,</span><br><span class="line">            FrameLayout.LayoutParams.MATCH_PARENT);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也可以通过加载 xml 布局创建 transitionSet ：</p>
+<p>xml 布局长这样：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version&#x3D;&quot;1.0&quot; encoding&#x3D;&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;transitionSet xmlns:android&#x3D;&quot;http:&#x2F;&#x2F;schemas.android.com&#x2F;apk&#x2F;res&#x2F;android&quot;</span><br><span class="line">    android:transitionOrdering&#x3D;&quot;together&quot;&gt;</span><br><span class="line">    &lt;changeImageTransform&#x2F;&gt;</span><br><span class="line">    &lt;changeTransform&#x2F;&gt;</span><br><span class="line">&lt;&#x2F;transitionSet&gt;</span><br></pre></td></tr></table></figure>
+
+<p>通过 transitionOrdering 属性设置动画执行的顺序，together 表示同时执行，sequential 表示顺序执行，在代码中可以调用 TransitionSet 的 setOrdering(int) 方法，属性值传 <a href="https://developer.android.com/reference/android/transition/TransitionSet.html#ORDERING_SEQUENTIAL" target="_blank" rel="noopener">ORDERING_SEQUENTIAL</a> 或者 <a href="https://developer.android.com/reference/android/transition/TransitionSet.html#ORDERING_TOGETHER" target="_blank" rel="noopener">ORDERING_TOGETHER</a></p>
+<p>在代码中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">mTransition &#x3D; (TransitionSet) TransitionInflater.from(getContext())</span><br><span class="line">.inflateTransition(R.transition.transition);</span><br><span class="line">TransitionManager.beginDelayedTransition(mOuterFrame, mTransition);</span><br><span class="line">if (mInnerFrame.getChildCount() &gt; 0) &#123;</span><br><span class="line">    mInnerFrame.removeAllViews();</span><br><span class="line">    addImageView(mOuterFrame, ImageView.ScaleType.CENTER_CROP, mPhotoSize);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    mOuterFrame.removeViewAt(1);</span><br><span class="line">    addImageView(mInnerFrame, ImageView.ScaleType.FIT_XY,</span><br><span class="line">            FrameLayout.LayoutParams.MATCH_PARENT);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里结合 changeImageTransform 和 changeTransform ，效果如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.13.gif" style="zoom:50%"/>
+
+
+
+
+
+<h4 id="PathMotion"><a href="#PathMotion" class="headerlink" title="PathMotion"></a>PathMotion</h4><img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_17.png" style="zoom:40%"/>
+
+<p>Transition 的辅助工具，以 path 的方式指定过渡效果，两个具体实现类 ArcMotion 和 PatternPathMotion，看下ArcMotion 的效果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mTransition &#x3D; new AutoTransition();</span><br><span class="line">mTransition.setPathMotion(new ArcMotion());</span><br><span class="line">TransitionManager.beginDelayedTransition(mRoot, mTransition);</span><br><span class="line">FrameLayout.LayoutParams lp &#x3D; (FrameLayout.LayoutParams) mTarget.getLayoutParams();</span><br><span class="line">if ((lp.gravity &amp; Gravity.START) &#x3D;&#x3D; Gravity.START) &#123;</span><br><span class="line">    lp.gravity &#x3D; Gravity.END | Gravity.BOTTOM;</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    lp.gravity &#x3D; Gravity.START | Gravity.TOP;</span><br><span class="line">&#125;</span><br><span class="line">mTarget.setLayoutParams(lp);</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.14.gif" style="zoom:50%"/>
+
+<h4 id="自定义-Transition"><a href="#自定义-Transition" class="headerlink" title="自定义 Transition"></a>自定义 Transition</h4><p>除了系统内置的 Transition，我们还可以自定义 Transition 效果，需要继承 Transition</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public class CustomTransition extends Transition &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void captureStartValues(TransitionValues values) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void captureEndValues(TransitionValues values) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public Animator createAnimator(ViewGroup sceneRoot,</span><br><span class="line">                                   TransitionValues startValues,</span><br><span class="line">                                   TransitionValues endValues) &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其工作原理是在 captureStartValues 和 captureEndValues 中分别记录 View 的属性值，官网建议确保属性值不冲突，属性值的命名格式参考：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">package_name:transition_name:property_name</span><br></pre></td></tr></table></figure>
+
+<p>在 createAnimator 中创建动画，对比属性值的改变执行动画效果，如自定义修改颜色动画效果：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_1.15.gif" style="zoom:50%"/>
+
+<p>在两个 Scene 中使用自定义过渡动画，效果如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition1_16.gif" style="zoom:50%"/>
+
+<h2 id="Note"><a href="#Note" class="headerlink" title="Note"></a>Note</h2><ol>
+<li><p>Android 版本在 4.0(API Level 14) 到 4.4.2(API Level 19) 使用 Android Support Library’s </p>
+</li>
+<li><p>对于 SurfaceView 可能不起效果，因为 SurfaceView 的实例是在非 UI 线程更新的，因此会造成和其他视图动画不同步。</p>
+</li>
+<li><p>某些特定的转换类型在应用到 TextureView 时可能不会产生所需的动画效果。</p>
+</li>
+<li><p>继承自 AdapterView 的如 ListView，与该框架不兼容。</p>
+</li>
+<li><p>不要对包含文本的视图的大小进行动画</p>
+</li>
+</ol>
+<h2 id="Thanks-to"><a href="#Thanks-to" class="headerlink" title="Thanks to"></a>Thanks to</h2><ol>
+<li><p><a href="https://github.com/android/platform_frameworks_support" target="_blank" rel="noopener">Google Demo</a></p>
+</li>
+<li><p><a href="https://github.com/Rkhcy/TransitionNote" target="_blank" rel="noopener">Github Demo传送门</a></p>
+</li>
+</ol>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>图解 HashMap (一) - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="HashMap 是什么在回答这个问题之前先看个例子：小明打算从 A 市搬家到 B 市，拿了两个箱子把自己的物品打包就出发了。
+
+
+到了 B 市之后，他想拿手机给家里报个平安，这时候问题来了，东西多了他忘记手机放在哪个箱子了？小明开始打开 1 号箱子找手机，没找到；再打开 2 号箱子找，找到手机。当只">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="图解 HashMap (一)"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/cover_hashmap1.jpg" alt="图解 HashMap (一)">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>图解 HashMap (一)</h1>
+      <hr>
+      <span class="date">2017-12-03</span>
+    </div>
+
+    <h3 id="HashMap-是什么"><a href="#HashMap-是什么" class="headerlink" title="HashMap 是什么"></a>HashMap 是什么</h3><p>在回答这个问题之前先看个例子：小明打算从 A 市搬家到 B 市，拿了两个箱子把自己的物品打包就出发了。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_01.png" style="zoom:50%"/>
+
+<p>到了 B 市之后，他想拿手机给家里报个平安，这时候问题来了，东西多了他忘记手机放在哪个箱子了？小明开始打开 1 号箱子找手机，没找到；再打开 2 号箱子找，找到手机。当只有 2 个箱子的时候，东西又不多的情况下，他可能花个 2 分钟就找到手机了，假如有 20 个箱子，每个箱子的东西又多又杂，那么花的时间就多了。小明总结了下查找耗时的原因，发现是因为这些东西放的没有规律，如果他把每个箱子分个类别，比如定一个箱子专门放手机、电脑等电子设备，有专门放衣服的箱子等等，那么他找东西花的时间就可以大大缩短了。</p>
+<p>其实 HashMap 也是用到这种思路，HashMap 作为一种数据结构，像数组和链表一样用于常规的增删改查，在存数据的时候并不是随便乱放，而是会先做一次类似“分类”的操作再存储，一旦“分类”存储之后，下次取的时候就可以大大缩短查找的时间。我们知道数组在执行查、改的效率很高，而增、删(不是尾部)的效率低，链表相反，HashMap 则是把这两者结合起来，看下 HashMap 的数据结构</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_002.png" style="zoom:50%"/>
+
+<p>从上面的结构可以看出，通常情况下 HashMap 是以数组和链表的组合构成( Java8 中将链表长度超过 8 的链表转化成红黑树)。结合上面找手机的例子，我们简单分析下 HashMap 存取操作的过程。put 存一个键值对的时候(比如存上图盖伦)，先根据键值“分类”，“分类”一顿操作后告诉我们，盖伦应该属于 14 号坑，直接定位到 14 号坑。接下来有几种情况：</p>
+<ul>
+<li>14 号坑没人，nice，直接存值；</li>
+<li>14 号有人，也叫盖伦，替换原来的攻击值；</li>
+<li>14 号有人，叫老王！插队到老王前面去(单链表的头插入方式，同一位置上新元素总会被放在链表的头部位置)</li>
+</ul>
+<p>get 取的时候也需要传键值，根据传的键值来确定要找的是哪个“类别”，比如找火男，“分类”一顿操作够告诉我们火男属于 2 号坑，于是我们直接定位到 2 号坑开始找，亚索不是…找到火男。</p>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>HashMap 是由数组和链表组合构成的数据结构，Java8 中链表长度超过 8 时会把长度超过 8 的链表转化成红黑树；存取时都会根据键值计算出“类别”，再根据“类别”定位到数组中的位置并执行操作。</p>
+<h3 id="HashCode-是什么"><a href="#HashCode-是什么" class="headerlink" title="HashCode 是什么"></a>HashCode 是什么</h3><p>还是举个栗子：一个工厂有 500 号人，下图用两种方案来存储厂里员工的信件。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_08.png" style="zoom:50%"/>
+
+<p>左右各有 27 个信箱，左边保安大哥存信的时候不做处理，想放哪个信箱就放哪个信箱，当员工去找信的时候，只好挨个信箱找，再挨个比对信箱里信封的名字，万一哥们脸黑，要找的放在最后一个信箱的最底下，悲剧…所以这种情况的时间复杂度为 O(N) ；右边采用 HashCode 的方式将 27 个信箱分类，分类的规则是名字首字母(第一个箱子放不写名字的哥们)，保安大哥将符合对应姓名的信件放在对应的信箱里，这样员工就不用挨个找了，只需要比对一个信箱里的信件即可，大大提高了效率，这种情况的时间复杂度趋于一个常数 O(1) 。</p>
+<p>例子中右图其实就是 hashCode 的一个实现，每个员工都有自己的 hashCode ，比如李四的 hashCode 是 L ，王五的       hashCode 是 W (这取决于你的 hash 算法怎么写)，然后我们根据确定的 hashCode 值把信箱分类，hashCode 匹配则存在对应信箱。在 Java 的 Object 中可以调用 hashCode() 方法获取对象 hashCode ，返回一个 int 值。那么会出现两个对象的 hashCode 一样吗?答案是会的，就像上上个例子中盖伦和老王的 hashCode 就一样，这种情况网上有人称之为“ hash 碰撞”，出现这种所谓“碰撞”的处理上面已经介绍了解决思路，具体源码后续介绍。</p>
+<h4 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h4><p>hashCode 是一个对象的标识，Java 中对象的 hashCode 是一个 int 类型值。通过 hashCode 来指定数组的索引可以快速定位到要找的对象在数组中的位置，之后再遍历链表找到对应值，理想情况下时间复杂度为 O(1) ，并且不同对象可以拥有相同的 hashCode。</p>
+<h3 id="HashMap-的时间复杂度"><a href="#HashMap-的时间复杂度" class="headerlink" title="HashMap 的时间复杂度"></a>HashMap 的时间复杂度</h3><p>通过上面信箱找信的例子来讨论下 HashMap 的时间复杂度，在使用 hashCode 之后可以直接定位到一个箱子，时间的耗费主要是在遍历链表上，理想的情况下( hash 算法写得很完美)，链表只有一个节点，就是我们要的</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_09.png" style="zoom:50%"/>
+
+<p>那么此时的时间复杂度为 O(1) ，那不理想的情况下( hash 算法写得很糟糕)，比如上面信箱的例子，假设 hash 算法计算每个员工都返回同样的 hashCode</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_07.png" style="zoom:50%"/>
+
+<p>所有的信都放在一个箱子里，此时要找信就要依次遍历 C 信箱里的信，时间复杂度不再是 O(1) ，而是 O(N) ，因此HashMap 的时间复杂度取决于算法的实现上，当然 HashMap 内部的机制并不像信箱这么简单，在 HashMap 内部会涉及到扩容、Java8 中会将长度超过 8 的链表转化成红黑树，这些都在后续介绍。</p>
+<h4 id="小结-2"><a href="#小结-2" class="headerlink" title="小结"></a>小结</h4><p>HashMap 的时间复杂度取决于 hash 算法，优秀的 hash 算法可以让时间复杂度趋于常数 O(1) ，糟糕的 hash 算法可以让时间复杂度趋于 O(N)。</p>
+<h3 id="负载因子是什么"><a href="#负载因子是什么" class="headerlink" title="负载因子是什么"></a>负载因子是什么</h3><p>我们知道 HashMap 中默认初始数组长度是 16 (什么？你说不知道，看下源码你就知道)，假设我们用的是最优秀的 hash 算法，即保证每次往 hashmap 里存键值对的时候，都不会重复，当 hashmap 里有 16个 键值对的时候，要找到指定的某一个，只需要 1 次；</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_004.png" style="zoom:50%"/>
+
+<p>之后继续往里面存值，必然会发生所谓的“ hash 碰撞”形成链表，当 hashmap 里有 32 个键值对时，找到指定的某一个最坏情况要 2 次；当 hashmap 里有 128 个键值对时，找到指定的某一个最坏情况要 8 次</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_005.png" style="zoom:50%"/>
+
+<p>随着 hashmap 里的键值对越来越多，在数组长度不变的情况下，查找的效率会越来越低。那怎么解决这个问题呢？只要增加数组的长度就行了，键值对超过 16 ，相应的就要把数组的长度增加( HashMap 内部是原来的数组长度乘以 2 )，这就是网上所谓的<strong>扩容</strong>，就算你有 128 个键值对，我们准备了 128 个坑，还是能保证“一个萝卜一个坑”。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_006.png" style="zoom:50%"/>
+
+<blockquote>
+<p>其实扩容并没有那么风光，就像 ArrayList 一样，扩容是件很麻烦的事情，要创建一个新的数组，然后把原来数组里的键值对“放”到新的数组里，这里的“放”不像 ArrayList 那样用原来的 index ，而是根据新表的长度重新计算hashCode，来保证在新表的位置，老麻烦了，所以同一个键值对在旧数组里的索引和新数组中的索引通常是不一致的。另外，我们也可以看出这是典型的以空间换时间的操作。</p>
+</blockquote>
+<p>说了这么多，那负载因子是个什么东西？负载因子其实就是规定什么时候扩容。上面我们说默认 hashmap 数组长度为 16 ，存的键值对数量超过 16 则进行扩容，好像没什么毛病。然而 HashMap 中并不是等数组满了才扩容，它内部有一个阈值( threshold )，只要 hashmap 里的键值对大于等于这个阈值，那么就要进行扩容。阈值的计算公式：</p>
+<blockquote>
+<p>阈值 = 当前数组长度 * 负载因子</p>
+</blockquote>
+<p>hashmap 中默认负载因子为 <strong>0.75</strong> ，默认情况下第一次扩容判断阈值是 16 * 0.75 = 12 ；所以第一次存键值对的时候，在存到第 13 个键值对时就需要扩容了；或者另外一种理解思路：假设当前存到第 12 个键值对：12 / 16 = 0.75 ，13 / 16 = 0.8125 (大于 0.75 需要扩容) 。肯定会有人有疑问，我要这负载因子有何用? 直接规定超过数组长度再扩容不就行了，还省得每次扩容之后还要重新计算新的阈值，Google 说取 0.75 是一个比较好的权衡，当然我们可以自己修改，HashMap 初识化时可以指定数组大小和负载因子，你完全可以改成 1 。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public HashMap(int initialCapacity, float loadFactor)</span><br></pre></td></tr></table></figure>
+
+<p>我的理解是这负载因子就像人的饭量，有的人吃要 7 分饱，有的人要 10 分饱，稳妥起见默认让我们 7.5 分饱。</p>
+<h4 id="小结-3"><a href="#小结-3" class="headerlink" title="小结"></a>小结</h4><p>在数组大小不变的情况下，存放键值对越多，查找的时间效率会降低，扩容可以解决该问题，而负载因子决定了什么时候扩容，负载因子是已存键值对的数量和总的数组长度的比值。默认情况下负载因子为 0.75 ，我们可在初始化 HashMap 的时候自己修改。</p>
+<h3 id="hash-与-rehash"><a href="#hash-与-rehash" class="headerlink" title="hash 与 rehash"></a>hash 与 rehash</h3><p>hash 和 rehash 的概念其实上面已经分析过了，每次扩容后，转移旧表键值对到新表之前都要重新 rehash，计算键值对在新表的索引。如下图火男这个键值对被存进 hashmap 到后面扩容，会经过 hash 和 rehash 的过程</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_007.png" style="zoom:50%"/>
+
+<p>第一次 hash 可以理解成“分类”，方便后续取、改等操作可以快速定位到具体的“坑”。那么为什么要进行 rehash ，按照之前元素在数组中的索引直接赋值，例如火男之前 3 号坑，现在跑到 30 号坑。</p>
+<p>个人理解是，在未扩容前，可以看到如 13 号链的长度是 3 ，为了保证我们每次查找的时间复杂度 O 趋于 O(1) ，理想的情况是“一个萝卜一个坑”，那么现在“坑”多了，原来“ 3 个萝卜一个坑”的情况现在就能有效的避免了。</p>
+<h3 id="Java7-源码分析"><a href="#Java7-源码分析" class="headerlink" title="Java7 源码分析"></a>Java7 源码分析</h3><p>先看下 Java7 里的 HashMap 实现，有了上面的分析，现在在源码中找具体的实现。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;HashMap里的数组</span><br><span class="line">transient Entry&lt;K,V&gt;[] table &#x3D; (Entry&lt;K,V&gt;[]) EMPTY_TABLE;</span><br><span class="line">&#x2F;&#x2F;Entry对象，存key、value、hash值以及下一个节点</span><br><span class="line">static class Entry&lt;K,V&gt; implements Map.Entry&lt;K,V&gt; &#123;</span><br><span class="line">    final K key;</span><br><span class="line">    V value;</span><br><span class="line">    Entry&lt;K,V&gt; next;</span><br><span class="line">    int hash;</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F;默认数组大小，二进制1左移4位为16</span><br><span class="line">static final int DEFAULT_INITIAL_CAPACITY &#x3D; 1 &lt;&lt; 4；</span><br><span class="line">&#x2F;&#x2F;负载因子默认值</span><br><span class="line">static final float DEFAULT_LOAD_FACTOR &#x3D; 0.75f; </span><br><span class="line">&#x2F;&#x2F;当前存的键值对数量</span><br><span class="line">transient int size; </span><br><span class="line">&#x2F;&#x2F;阈值 &#x3D; 数组大小 * 负载因子</span><br><span class="line">int threshold;</span><br><span class="line">&#x2F;&#x2F;负载因子变量</span><br><span class="line">final float loadFactor;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;默认new HashMap数组大小16，负载因子0.75</span><br><span class="line">public HashMap() &#123;</span><br><span class="line">    this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public HashMap(int initialCapacity) &#123;</span><br><span class="line">    this(initialCapacity, DEFAULT_LOAD_FACTOR);</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F;可以指定数组大小和负载因子</span><br><span class="line">public HashMap(int initialCapacity, float loadFactor) &#123;</span><br><span class="line">    &#x2F;&#x2F;省略一些逻辑判断</span><br><span class="line">    this.loadFactor &#x3D; loadFactor;</span><br><span class="line">    threshold &#x3D; initialCapacity;</span><br><span class="line">    &#x2F;&#x2F;空方法</span><br><span class="line">    init();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上就是 HashMap 的一些先决条件，接着看平时 put 操作的代码实现，put 的时候会遇到 3 种情况上面已分析过，看下Java7 代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">public V put(K key, V value) &#123;</span><br><span class="line">    &#x2F;&#x2F;数组为空时创建数组</span><br><span class="line">    if (table &#x3D;&#x3D; EMPTY_TABLE) &#123;</span><br><span class="line">        inflateTable(threshold);</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;key为空单独对待</span><br><span class="line">    if (key &#x3D;&#x3D; null)</span><br><span class="line">        return putForNullKey(value);</span><br><span class="line">    &#x2F;&#x2F;①根据key计算hash值</span><br><span class="line">    int hash &#x3D; hash(key);</span><br><span class="line">    &#x2F;&#x2F;②根据hash值和当前数组的长度计算在数组中的索引</span><br><span class="line">    int i &#x3D; indexFor(hash, table.length);</span><br><span class="line">    &#x2F;&#x2F;遍历整条链表</span><br><span class="line">    for (Entry&lt;K,V&gt; e &#x3D; table[i]; e !&#x3D; null; e &#x3D; e.next) &#123;</span><br><span class="line">        Object k;</span><br><span class="line">        &#x2F;&#x2F;③情况1.hash值和key值都相同的情况，替换之前的值</span><br><span class="line">        if (e.hash &#x3D;&#x3D; hash &amp;&amp; ((k &#x3D; e.key) &#x3D;&#x3D; key || key.equals(k))) &#123;</span><br><span class="line">            V oldValue &#x3D; e.value;</span><br><span class="line">            e.value &#x3D; value;</span><br><span class="line">            e.recordAccess(this);</span><br><span class="line">            &#x2F;&#x2F;返回被替换的值</span><br><span class="line">            return oldValue;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    modCount++;</span><br><span class="line">    &#x2F;&#x2F;③情况2.坑位没人,直接存值或发生hash碰撞都走这</span><br><span class="line">    addEntry(hash, key, value, i);</span><br><span class="line">    return null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>先看上面 key 为空的情况(上面画图的时候总要在第一格留个空 key 的键值对)，执行 putForNullKey() 方法单独处理，会把该键值对放在 index0 ，所以 HashMap 中是允许 key 为空的情况。再看下主流程：</p>
+<p>步骤①.根据键值算出 hash 值 — &gt; hash(key)</p>
+<p>步骤②.根据 hash 值和当前数组的长度计算在数组中的索引 — &gt; indexFor(hash, table.length)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">static int indexFor(int h, int length) &#123;</span><br><span class="line">    &#x2F;&#x2F;hash值和数组长度-1按位与操作，听着费劲？其实相当于h%length;取余数(取模运算)</span><br><span class="line">    &#x2F;&#x2F;如：h &#x3D; 17，length &#x3D; 16;那么算出就是1</span><br><span class="line">    &#x2F;&#x2F;&amp;运算的效率比%要高</span><br><span class="line">    return h &amp; (length-1);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>步骤③情况1. hash 值和 key 值都相同，替换原来的值，并将被替换的值返回。</p>
+<p>步骤③情况2.坑位没人或发生 hash 碰撞 — &gt; addEntry(hash, key, value, i)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">void addEntry(int hash, K key, V value, int bucketIndex) &#123;</span><br><span class="line">    &#x2F;&#x2F;当前hashmap中的键值对数量超过阈值</span><br><span class="line">    if ((size &gt;&#x3D; threshold) &amp;&amp; (null !&#x3D; table[bucketIndex])) &#123;</span><br><span class="line">        &#x2F;&#x2F;扩容为原来的2倍</span><br><span class="line">        resize(2 * table.length);</span><br><span class="line">        hash &#x3D; (null !&#x3D; key) ? hash(key) : 0;</span><br><span class="line">        &#x2F;&#x2F;计算在新表中的索引</span><br><span class="line">        bucketIndex &#x3D; indexFor(hash, table.length);</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;创建节点</span><br><span class="line">    createEntry(hash, key, value, bucketIndex);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果 put 的时候超过阈值，会调用 resize() 方法将数组大小扩大为原来的 2 倍，并且根据新表的长度计算在新表中的索引(如之前 17 % 16 = 1，现在 17 % 32 = 17 )，看下 resize 方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">void resize(int newCapacity) &#123; &#x2F;&#x2F;传入新的容量</span><br><span class="line">    &#x2F;&#x2F;获取旧数组的引用</span><br><span class="line">    Entry[] oldTable &#x3D; table;</span><br><span class="line">    int oldCapacity &#x3D; oldTable.length;</span><br><span class="line">    &#x2F;&#x2F;极端情况，旧数组长度已经是最大值</span><br><span class="line">    if (oldCapacity &#x3D;&#x3D; MAXIMUM_CAPACITY) &#123;</span><br><span class="line">        &#x2F;&#x2F;修改阈值为最大直接返回</span><br><span class="line">        threshold &#x3D; Integer.MAX_VALUE;</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;步骤①根据容量创建新的数组</span><br><span class="line">    Entry[] newTable &#x3D; new Entry[newCapacity];</span><br><span class="line">    &#x2F;&#x2F;步骤②将键值对转移到新的数组中</span><br><span class="line">    transfer(newTable, initHashSeedAsNeeded(newCapacity));</span><br><span class="line">    &#x2F;&#x2F;步骤③将新数组的引用赋给table</span><br><span class="line">    table &#x3D; newTable;</span><br><span class="line">    &#x2F;&#x2F;步骤④修改阈值</span><br><span class="line">    threshold &#x3D; (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY + 1);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的重点是步骤②，看下它具体的转移操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">void transfer(Entry[] newTable, boolean rehash) &#123;</span><br><span class="line">    &#x2F;&#x2F;获取新数组的长度</span><br><span class="line">    int newCapacity &#x3D; newTable.length;</span><br><span class="line">    &#x2F;&#x2F;遍历旧数组中的键值对</span><br><span class="line">    for (Entry&lt;K,V&gt; e : table) &#123;</span><br><span class="line">        while(null !&#x3D; e) &#123;</span><br><span class="line">            Entry&lt;K,V&gt; next &#x3D; e.next;</span><br><span class="line">            if (rehash) &#123;</span><br><span class="line">                e.hash &#x3D; null &#x3D;&#x3D; e.key ? 0 : hash(e.key);</span><br><span class="line">            &#125;</span><br><span class="line">            &#x2F;&#x2F;计算在新表中的索引，并到新数组中</span><br><span class="line">            int i &#x3D; indexFor(e.hash, newCapacity);</span><br><span class="line">            e.next &#x3D; newTable[i];</span><br><span class="line">            newTable[i] &#x3D; e;</span><br><span class="line">            e &#x3D; next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段 for 循环的遍历会使得转移前后键值对的顺序颠倒( Java7 和 Java8 的区别)，画个图就清楚了，假设石头的 key 的 hash 值为 5 ，盖伦的 key 的 hash 值为 37 ，这样扩容前后两者还是在 5 号坑。第一次：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_026.png" style="zoom:50%"/>
+
+<p>第二次</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_025.png" style="zoom:50%"/>
+
+<p>最后再看下创建节点的方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">void createEntry(int hash, K key, V value, int bucketIndex) &#123;</span><br><span class="line">    Entry&lt;K,V&gt; e &#x3D; table[bucketIndex];</span><br><span class="line">    table[bucketIndex] &#x3D; new Entry&lt;&gt;(hash, key, value, e);</span><br><span class="line">    size++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>创建节点时，如果找到的这个坑里面没有存值，那么直接把值存进去就行了，然后 size++ ；如果是碰撞的情况，</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_009.png" style="zoom:50%"/>
+
+<p>前面说的以单链表头插入的方式就是这样，总结一下 Java7 put 流程图</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_012.png" style="zoom:50%"/>
+
+<p>相比 put，get 操作就没这么多套路，只需要根据 key 值计算 hash 值，和数组长度取模，然后就可以找到在数组中的位置( key 为空同样单独操作)，接着就是遍历链表，源码很少就不分析了。</p>
+<h3 id="Java8-源码分析"><a href="#Java8-源码分析" class="headerlink" title="Java8 源码分析"></a>Java8 源码分析</h3><p>基本思路是一样的</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;定义长度超过8的链表转化成红黑树</span><br><span class="line">static final int TREEIFY_THRESHOLD &#x3D; 8;</span><br><span class="line">&#x2F;&#x2F;换了个马甲还是认识你！！！</span><br><span class="line">static class Node&lt;K,V&gt; implements Map.Entry&lt;K,V&gt; &#123;</span><br><span class="line">        final int hash;</span><br><span class="line">        final K key;</span><br><span class="line">        V value;</span><br><span class="line">        Node&lt;K,V&gt; next;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看下 Java8 put 的源码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line">public V put(K key, V value) &#123;</span><br><span class="line">    &#x2F;&#x2F;根据key计算hash值</span><br><span class="line">    return putVal(hash(key), key, value, false, true);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">final V putVal(int hash, K key, V value, boolean onlyIfAbsent,</span><br><span class="line">                   boolean evict) &#123;</span><br><span class="line">        Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;</span><br><span class="line">        &#x2F;&#x2F;步骤1.数组为空或数组长度为0，则扩容(咦，看到不一样咯)</span><br><span class="line">        if ((tab &#x3D; table) &#x3D;&#x3D; null || (n &#x3D; tab.length) &#x3D;&#x3D; 0)</span><br><span class="line">            n &#x3D; (tab &#x3D; resize()).length;</span><br><span class="line">        &#x2F;&#x2F;步骤2.根据hash值和数组长度计算在数组中的位置</span><br><span class="line">        &#x2F;&#x2F;如果&quot;坑&quot;里没人，直接创建Node并存值</span><br><span class="line">        if ((p &#x3D; tab[i &#x3D; (n - 1) &amp; hash]) &#x3D;&#x3D; null)</span><br><span class="line">            tab[i] &#x3D; newNode(hash, key, value, null);</span><br><span class="line">        else &#123;</span><br><span class="line">            Node&lt;K,V&gt; e; K k;</span><br><span class="line">            &#x2F;&#x2F;步骤3.&quot;坑&quot;里有人，且hash值和key值都相等，先获取引用，后面会用来替换值</span><br><span class="line">            if (p.hash &#x3D;&#x3D; hash &amp;&amp;</span><br><span class="line">                ((k &#x3D; p.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k))))</span><br><span class="line">                e &#x3D; p;</span><br><span class="line">            &#x2F;&#x2F;步骤4.该链是红黑树</span><br><span class="line">            else if (p instanceof TreeNode)</span><br><span class="line">                e &#x3D; ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);</span><br><span class="line">            &#x2F;&#x2F;步骤5.该链是链表</span><br><span class="line">            else &#123;</span><br><span class="line">                for (int binCount &#x3D; 0; ; ++binCount) &#123;</span><br><span class="line">                    if ((e &#x3D; p.next) &#x3D;&#x3D; null) &#123;</span><br><span class="line">                        &#x2F;&#x2F;步骤5.1注意这个地方跟Java7不一样，是插在链表尾部！！！</span><br><span class="line">                        p.next &#x3D; newNode(hash, key, value, null);</span><br><span class="line">                        &#x2F;&#x2F;链表长度超过8，转化成红黑树</span><br><span class="line">                        if (binCount &gt;&#x3D; TREEIFY_THRESHOLD - 1) &#x2F;&#x2F; -1 for 1st</span><br><span class="line">                            treeifyBin(tab, hash);</span><br><span class="line">                        break;</span><br><span class="line">                    &#125;</span><br><span class="line">                    &#x2F;&#x2F;步骤5.2链表中已存在且hash值和key值都相等，先获取引用，后面用来替换值</span><br><span class="line">                    if (e.hash &#x3D;&#x3D; hash &amp;&amp;</span><br><span class="line">                        ((k &#x3D; e.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k))))</span><br><span class="line">                        break;</span><br><span class="line">                    p &#x3D; e;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            if (e !&#x3D; null) &#123; &#x2F;&#x2F; existing mapping for key</span><br><span class="line">                V oldValue &#x3D; e.value;</span><br><span class="line">                if (!onlyIfAbsent || oldValue &#x3D;&#x3D; null)</span><br><span class="line">                    &#x2F;&#x2F;统一替换原来的值</span><br><span class="line">                    e.value &#x3D; value;</span><br><span class="line">                afterNodeAccess(e);</span><br><span class="line">                &#x2F;&#x2F;返回原来的值</span><br><span class="line">                return oldValue;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        ++modCount;</span><br><span class="line">        &#x2F;&#x2F;步骤6.键值对数量超过阈值，扩容</span><br><span class="line">        if (++size &gt; threshold)</span><br><span class="line">            resize();</span><br><span class="line">        afterNodeInsertion(evict);</span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过上面注释分析，对比和 Java7 的区别，Java8 一视同仁，管你 key 为不为空的统一处理，多了一步链表长度的判断以及转红黑树的操作，并且比较重要的一点，新增 Node 是插在尾部而不是头部。当然上面的主角还是扩容 resize 操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line">final Node&lt;K,V&gt;[] resize() &#123;</span><br><span class="line">    &#x2F;&#x2F;旧数组的引用</span><br><span class="line">    Node&lt;K,V&gt;[] oldTab &#x3D; table;</span><br><span class="line">    &#x2F;&#x2F;旧数组长度</span><br><span class="line">    int oldCap &#x3D; (oldTab &#x3D;&#x3D; null) ? 0 : oldTab.length;</span><br><span class="line">    &#x2F;&#x2F;旧数组阈值</span><br><span class="line">    int oldThr &#x3D; threshold;</span><br><span class="line">    &#x2F;&#x2F;新数组长度、新阈值</span><br><span class="line">    int newCap, newThr &#x3D; 0;</span><br><span class="line">    if (oldCap &gt; 0) &#123;</span><br><span class="line">        &#x2F;&#x2F;极端情况，旧数组爆满了</span><br><span class="line">        if (oldCap &gt;&#x3D; MAXIMUM_CAPACITY) &#123;</span><br><span class="line">            &#x2F;&#x2F;阈值改成最大，放弃治疗直接返回旧数组</span><br><span class="line">            threshold &#x3D; Integer.MAX_VALUE;</span><br><span class="line">            return oldTab;</span><br><span class="line">        &#125;</span><br><span class="line">        &#x2F;&#x2F;扩容咯，这里采用左移运算左移1位，也就是旧数组*2</span><br><span class="line">        else if ((newCap &#x3D; oldCap &lt;&lt; 1) &lt; MAXIMUM_CAPACITY &amp;&amp;</span><br><span class="line">                 oldCap &gt;&#x3D; DEFAULT_INITIAL_CAPACITY)</span><br><span class="line">            &#x2F;&#x2F;同样新阈值也是旧阈值*2</span><br><span class="line">            newThr &#x3D; oldThr &lt;&lt; 1; &#x2F;&#x2F; double threshold</span><br><span class="line">    &#125;</span><br><span class="line">    else if (oldThr &gt; 0) &#x2F;&#x2F; initial capacity was placed in threshold</span><br><span class="line">        newCap &#x3D; oldThr;</span><br><span class="line">    &#x2F;&#x2F;初始化在这里</span><br><span class="line">    else &#123;               &#x2F;&#x2F; zero initial threshold signifies using defaults</span><br><span class="line">        newCap &#x3D; DEFAULT_INITIAL_CAPACITY;</span><br><span class="line">        newThr &#x3D; (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);</span><br><span class="line">    &#125;</span><br><span class="line">    if (newThr &#x3D;&#x3D; 0) &#123;</span><br><span class="line">        float ft &#x3D; (float)newCap * loadFactor;</span><br><span class="line">        newThr &#x3D; (newCap &lt; MAXIMUM_CAPACITY &amp;&amp; ft &lt; (float)MAXIMUM_CAPACITY ?</span><br><span class="line">                  (int)ft : Integer.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;更新阈值</span><br><span class="line">    threshold &#x3D; newThr;</span><br><span class="line">    @SuppressWarnings(&#123;&quot;rawtypes&quot;,&quot;unchecked&quot;&#125;)</span><br><span class="line">        &#x2F;&#x2F;创建新数组</span><br><span class="line">        Node&lt;K,V&gt;[] newTab &#x3D; (Node&lt;K,V&gt;[])new Node[newCap];</span><br><span class="line">    table &#x3D; newTab;</span><br><span class="line">    if (oldTab !&#x3D; null) &#123;</span><br><span class="line">        for (int j &#x3D; 0; j &lt; oldCap; ++j) &#123;</span><br><span class="line">            Node&lt;K,V&gt; e;</span><br><span class="line">            if ((e &#x3D; oldTab[j]) !&#x3D; null) &#123;</span><br><span class="line">                &#x2F;&#x2F;遍历旧数组，把原来的引用取消，方便垃圾回收</span><br><span class="line">                oldTab[j] &#x3D; null;</span><br><span class="line">                &#x2F;&#x2F;这个链只有一个节点，根据新数组长度计算在新表中的位置</span><br><span class="line">                if (e.next &#x3D;&#x3D; null)</span><br><span class="line">                    newTab[e.hash &amp; (newCap - 1)] &#x3D; e;</span><br><span class="line">                &#x2F;&#x2F;红黑树的处理</span><br><span class="line">                else if (e instanceof TreeNode)</span><br><span class="line">                    ((TreeNode&lt;K,V&gt;)e).split(this, newTab, j, oldCap);</span><br><span class="line">                &#x2F;&#x2F;链表长度大于1，小于8的情况，下面高能，单独拿出来分析</span><br><span class="line">                else &#123; &#x2F;&#x2F; preserve order</span><br><span class="line">                    Node&lt;K,V&gt; loHead &#x3D; null, loTail &#x3D; null;</span><br><span class="line">                    Node&lt;K,V&gt; hiHead &#x3D; null, hiTail &#x3D; null;</span><br><span class="line">                    Node&lt;K,V&gt; next;</span><br><span class="line">                    do &#123;</span><br><span class="line">                        next &#x3D; e.next;</span><br><span class="line">                        if ((e.hash &amp; oldCap) &#x3D;&#x3D; 0) &#123;</span><br><span class="line">                            if (loTail &#x3D;&#x3D; null)</span><br><span class="line">                                loHead &#x3D; e;</span><br><span class="line">                            else</span><br><span class="line">                                loTail.next &#x3D; e;</span><br><span class="line">                            loTail &#x3D; e;</span><br><span class="line">                        &#125;</span><br><span class="line">                        else &#123;</span><br><span class="line">                            if (hiTail &#x3D;&#x3D; null)</span><br><span class="line">                                hiHead &#x3D; e;</span><br><span class="line">                            else</span><br><span class="line">                                hiTail.next &#x3D; e;</span><br><span class="line">                            hiTail &#x3D; e;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; while ((e &#x3D; next) !&#x3D; null);</span><br><span class="line">                    if (loTail !&#x3D; null) &#123;</span><br><span class="line">                        loTail.next &#x3D; null;</span><br><span class="line">                        newTab[j] &#x3D; loHead;</span><br><span class="line">                    &#125;</span><br><span class="line">                    if (hiTail !&#x3D; null) &#123;</span><br><span class="line">                        hiTail.next &#x3D; null;</span><br><span class="line">                        newTab[j + oldCap] &#x3D; hiHead;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return newTab;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，Java8 把初始化数组和扩容全写在 resize 方法里了，但是思路还是一样的，扩容后要转移，转移要重新计算在新表中的位置，上面代码最后一块可能不太好理解，刚开始看的我一脸懵逼，看了一张<a href="https://tech.meituan.com/java-hashmap.html" target="_blank" rel="noopener">美团博客</a>的分析图才豁然开朗，在分析前先捋清楚思路</p>
+<blockquote>
+<p>下面我们讲解下 JDK1.8 做了哪些优化。经过观测可以发现，我们使用的是 2 次幂的扩展(指长度扩为原来 2 倍)，所以，元素的位置要么是在原位置，要么是在原位置再移动 2 次幂的位置。看下图可以明白这句话的意思，n 为 table 的长度，图（a）表示扩容前的 key1(5) 和 key2(21) 两种 key 确定索引位置的示例，图（b）表示扩容后 key1 和 key2 两种 key 确定索引位置的示例，其中 hash1 是 key1 对应的哈希与高位运算结果。</p>
+</blockquote>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_013.png" style="zoom:50%"/>
+
+<blockquote>
+<p>图 a 中 key1(5) 和 key(21) 计算出来的都是 5 ，元素在重新计算 hash 之后，因为 n 变为 2 倍，那么 n-1 的 mask范围在高位多 1 bit (红色)，因此新的 index 就会发生这样的变化：</p>
+</blockquote>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_014.png" style="zoom:50%"/>
+
+<blockquote>
+<p>图b中计算后 key1(5) 的位置还是 5 ，而 key2(21) 已经变成了 21，因此，我们在扩充 HashMap 的时候，不需要像 JDK1.7 的实现那样重新计算 hash ，只需要看看原来的 hash 值新增的那个 bit 是 1 还是 0 就好了，是 0 的话索引没变，是 1 的话索引变成“原索引 + oldCap”。</p>
+</blockquote>
+<p>有了上面的分析再回来看下源码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">else &#123; &#x2F;&#x2F; preserve order</span><br><span class="line">    &#x2F;&#x2F;定义两条链</span><br><span class="line">    &#x2F;&#x2F;原来的hash值新增的bit为0的链，头部和尾部</span><br><span class="line">    Node&lt;K,V&gt; loHead &#x3D; null, loTail &#x3D; null;</span><br><span class="line">    &#x2F;&#x2F;原来的hash值新增的bit为1的链，头部和尾部</span><br><span class="line">    Node&lt;K,V&gt; hiHead &#x3D; null, hiTail &#x3D; null;</span><br><span class="line">    Node&lt;K,V&gt; next;</span><br><span class="line">    &#x2F;&#x2F;循环遍历出链条链</span><br><span class="line">    do &#123;</span><br><span class="line">        next &#x3D; e.next;</span><br><span class="line">        if ((e.hash &amp; oldCap) &#x3D;&#x3D; 0) &#123;</span><br><span class="line">            if (loTail &#x3D;&#x3D; null)</span><br><span class="line">                loHead &#x3D; e;</span><br><span class="line">            else</span><br><span class="line">                loTail.next &#x3D; e;</span><br><span class="line">            loTail &#x3D; e;</span><br><span class="line">        &#125;</span><br><span class="line">        else &#123;</span><br><span class="line">            if (hiTail &#x3D;&#x3D; null)</span><br><span class="line">                hiHead &#x3D; e;</span><br><span class="line">            else</span><br><span class="line">                hiTail.next &#x3D; e;</span><br><span class="line">            hiTail &#x3D; e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; while ((e &#x3D; next) !&#x3D; null);</span><br><span class="line">    &#x2F;&#x2F;扩容前后位置不变的链</span><br><span class="line">    if (loTail !&#x3D; null) &#123;</span><br><span class="line">        loTail.next &#x3D; null;</span><br><span class="line">        newTab[j] &#x3D; loHead;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;扩容后位置加上原数组长度的链</span><br><span class="line">    if (hiTail !&#x3D; null) &#123;</span><br><span class="line">        hiTail.next &#x3D; null;</span><br><span class="line">        newTab[j + oldCap] &#x3D; hiHead;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>还是举个栗子，下面的表定义了键和它们的 hash 值(数组长度为 16 时，它们都在 5 号坑)</p>
+<img src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/new/hashmap1_table.jpeg" style="zoom:70%"/>
+
+<p>假设一个 hash 算法刚好算出来的的存储是这样的，在存第 13 个元素时要扩容</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_015.png" style="zoom:50%"/>
+
+<p>那么流程应该是这样的(只关注 5 号坑键值对的情况)，第一次：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_021.png" style="zoom:50%"/>
+
+<p>第二次：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_0019.png" style="zoom:50%"/>
+
+<p>省略中间几次，第六次</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_020.png" style="zoom:50%"/>
+
+<p>两条链找出来后，最后转移一波，大功告成。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;扩容前后位置不变的链</span><br><span class="line">if (loTail !&#x3D; null) &#123;</span><br><span class="line">    loTail.next &#x3D; null;</span><br><span class="line">    newTab[j] &#x3D; loHead;</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F;扩容后位置加上原数组长度的链</span><br><span class="line">if (hiTail !&#x3D; null) &#123;</span><br><span class="line">    hiTail.next &#x3D; null;</span><br><span class="line">    newTab[j + oldCap] &#x3D; hiHead;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_022.png" style="zoom:50%"/>
+
+<p>总结下 Java8 put 流程图</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_024.png" style="zoom:50%"/>
+
+<h4 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h4><p>1.发生 hash 冲突时，Java7 会在链表头部插入，Java8 会在链表尾部插入</p>
+<p>2.扩容后转移数据，Java7 转移前后链表顺序会倒置，Java8 还是保持原来的顺序</p>
+<p>3.关于性能对比可以参考<a href="https://tech.meituan.com/java-hashmap.html" target="_blank" rel="noopener">美团技术博客</a>，引入红黑树的 Java8 大程度得优化了 HashMap 的性能</p>
+<h3 id="感谢"><a href="#感谢" class="headerlink" title="感谢"></a>感谢</h3><p><a href="http://javabypatel.blogspot.ca/" target="_blank" rel="noopener">讲的很详细的外国小哥</a></p>
+<p><a href="https://tech.meituan.com/java-hashmap.html" target="_blank" rel="noopener">美团技术博客</a></p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

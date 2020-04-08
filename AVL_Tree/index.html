@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>AVL 树 - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="平衡的意义之前学习了二叉搜索树，知道这种结构基于折半的原理，在查找的时候效率很高，理想的情况下时间复杂度为  ，那不理想的情况又是怎样的呢？举个例子，根据二叉搜索树的特性，插入 { 6，5，4，3，2，1 } 这组数据，最终生成的二叉树如下：
+
+    
+
+
+要判断这棵树中是否存在 1 。 1 处在">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="AVL 树"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/avl_tree_cover.jpg" alt="AVL 树">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>AVL 树</h1>
+      <hr>
+      <span class="date">2019-01-21</span>
+    </div>
+
+    <h2 id="平衡的意义"><a href="#平衡的意义" class="headerlink" title="平衡的意义"></a>平衡的意义</h2><p>之前学习了二叉搜索树，知道这种结构基于折半的原理，在查找的时候效率很高，理想的情况下时间复杂度为 <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/653ab6d6fd99537d220f179d2591955ff4f37b99" alt="O(\log{n})"> ，那不理想的情况又是怎样的呢？举个例子，根据二叉搜索树的特性，插入 { 6，5，4，3，2，1 } 这组数据，最终生成的二叉树如下：</p>
+<center>
+    <img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);
+    zoom:50%"
+    src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_tree_1.png">
+</center>
+
+<p>要判断这棵树中是否存在 1 。 1 处在这棵树的最底部，并且这个棵树呈现出一边倒的形状，导致找 1 时遍历了所有的节点，这种情况下时间复杂度为 <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/34109fe397fdcff370079185bfdb65826cb5565a" alt="O(n)">。可见一旦二叉搜索树失去了平衡也就失去了效率，理想的二叉搜索树，是树的节点“均匀”分布在根节点两侧，才能满足时间复杂度  <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/aae0f22048ba6b7c05dbae17b056bfa16e21807d" alt="O(\log n)">。</p>
+<h2 id="平衡的定义"><a href="#平衡的定义" class="headerlink" title="平衡的定义"></a>平衡的定义</h2><p>怎样才算“均匀”分布呢？对于树中的节点，不能只让左或右孩子独得恩宠，雨露均沾才是王道。 <a href="https://en.wikipedia.org/wiki/AVL_tree" target="_blank" rel="noopener">Wikipedia</a> 给出了定义：</p>
+<blockquote>
+<p>二叉搜索树中，对于任意节点，<code>右</code>子树与<code>左</code>子树高度差不超过 1 ，则认为这棵树是平衡的。</p>
+</blockquote>
+<p>这个定义有个官方的名字 <code>平衡因子</code>（Balance factor），平衡因子只可能是「1，0，-1」，<code>注意是右子树的高度 - 左子树的高度</code>。有了这个规定，失衡的现象就能有所缓解了。俗话说不患贫而患不均，虽然「1，-1」目前是可接受的，却为将来的失衡埋下伏笔。这种导致失衡的隐患 <a href="https://en.wikipedia.org/wiki/AVL_tree" target="_blank" rel="noopener">Wikipedia</a> 给出了定义：</p>
+<blockquote>
+<p>平衡因子为 1 则该节点<code>右重（right-heavy）</code>，平衡因子为 -1 则该节点<code>左重（left-heavy）</code></p>
+</blockquote>
+<h2 id="4-种失衡"><a href="#4-种失衡" class="headerlink" title="4 种失衡"></a>4 种失衡</h2><p>上面说到可能导致失衡的隐患，分别是右重和左重。你可能在很多地方看到 <code>LL（左左）、RR（右右）、LR（左右）、RL（右左）</code>，搞得跟秘籍键似的这 TM 到底指的是啥？其实就是下面的 4 种失衡情况：</p>
+<p>LL（左左）：2 是 3 的 <code>左</code>子树，2 <code>左</code>重；</p>
+<img src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_ll.gif"/>
+
+<p>RR（右右）：2 是 1 的<code>右</code>子树，2 <code>右</code>重</p>
+<img src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_rr.gif"/>
+
+<p>LR（左右）：1 是 3 的<code>左</code>子树，1 <code>右</code>重</p>
+<img src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_lr.gif"/>
+
+<p>RL（右左）：3 是 1 的<code>右</code>子树，3 <code>左</code>重</p>
+<img src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_rl.gif"/>
+
+<h2 id="树的旋转"><a href="#树的旋转" class="headerlink" title="树的旋转"></a>树的旋转</h2><p>“症状”有了，就需要对症下药了。正常的思路是，哪边高了就降低其高度，但是要注意二叉搜索树中的节点是有顺序的（左&lt;中&lt;右），如何降低高度也是有讲究的。这里就引入一个很重要的操作——<code>旋转</code>，<a href="https://en.wikipedia.org/wiki/Tree_rotation" target="_blank" rel="noopener">旋转</a>能满足只改变树的结构，又符合节点的排列顺序。你可能在很多地方看到，为了保证树的平衡，会有左旋或右旋的操作，这里的左旋、右旋具体指的又是啥？ <a href="https://en.wikipedia.org/wiki/AVL_tree" target="_blank" rel="noopener">Wikipedia</a> 上的介绍</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_tree_rotation.png">
+</center>
+
+<p>当说到旋转时，是指对某个节点旋转（上图对 Q 右旋，对 P 左旋），仔细观察发现，<code>右旋使得 Q 的左孩子 P 取代了自己原来的位置，左旋使得 P 的右孩子 Q 取代了自己原来的位置</code>，记住这一点很重要哈。</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_tree_rotation_animation.gif">
+</center>
+
+<p>上面动图直观的感受就是<code>右旋后右子树高度升高，左子树高度降低；左旋后左子树升高，右子树高度降低；</code>除此之外，旋转的过程中也涉及到节点的交换</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:80%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_rotation.jpeg">
+</center>
+
+<p>从上图可以看到，当简单地说右旋，其实展开来说是指：</p>
+<ul>
+<li>根节点 5 右旋，首先将左子树 3 的右孩子 4 作为此时根节点 5 的左孩子；</li>
+<li>再将 5 这棵树作为新根节点 3 的右子树；</li>
+</ul>
+<p>左旋反之；因为这样很啰嗦，平时不会这么说，但这背后的原理得知道。此外旋转后节点还是符合大小排列顺序，这正是我们所希望的。</p>
+<h2 id="AVL-树"><a href="#AVL-树" class="headerlink" title="AVL 树"></a>AVL 树</h2><p>说了半天，这 AVL 树是个啥？这个有点“黄”的名字来源于它的发明者 G. M. <code>A</code>delson-<code>V</code>elsky 和 Evgenii <code>L</code>andis，名字不重要，功能才重要，它能在失衡的情况下通过旋转重新实现平衡，因此它的时间复杂度为 <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/653ab6d6fd99537d220f179d2591955ff4f37b99" alt="O(\log{n})"> 。上面介绍了 4 种失衡的情况，现在分别介绍 AVL 树是如何做到重新平衡的：</p>
+<p>LL（左左）: 假设要在下面这棵树中插入 3 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">    9</span><br><span class="line">   &#x2F; \</span><br><span class="line">  7   10</span><br><span class="line"> &#x2F; \</span><br><span class="line">6   8</span><br></pre></td></tr></table></figure>
+
+<p>首先要做的是先确定各个节点的平衡因子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">         9(-1)</span><br><span class="line">       &#x2F;       \</span><br><span class="line">     7(0)      10(0)</span><br><span class="line">    &#x2F; \</span><br><span class="line">6(0)   8(0)</span><br></pre></td></tr></table></figure>
+
+<p>插入 3 后：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">          9(-1?)</span><br><span class="line">         &#x2F;      \</span><br><span class="line">       7 (0?)   10(0)</span><br><span class="line">      &#x2F;   \</span><br><span class="line">  6(-1)   8(0)</span><br><span class="line">  &#x2F;</span><br><span class="line">3(0)</span><br></pre></td></tr></table></figure>
+
+<p>注意这里对可能影响到的路径后面加了个 ？，是因为此时他们的平衡因子还不确定，需要重新计算，由于 7 的左子树高度加 1 ，7 的平衡因子也变了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">          9(-1?)</span><br><span class="line">         &#x2F;      \</span><br><span class="line">       7(-1)    10(0)</span><br><span class="line">      &#x2F;   \</span><br><span class="line">  6(-1)   8(0)</span><br><span class="line">  &#x2F;</span><br><span class="line">3(0)</span><br></pre></td></tr></table></figure>
+
+<p>最后，相应的 9 的平衡因子也变了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">          9(-2)</span><br><span class="line">         &#x2F;      \</span><br><span class="line">       7(-1)    10(0)</span><br><span class="line">      &#x2F;   \</span><br><span class="line">  6(-1)   8(0)</span><br><span class="line">  &#x2F;</span><br><span class="line">3(0)</span><br></pre></td></tr></table></figure>
+
+<p>根据上面学的内容，这种左重的情况右旋后可以达到平衡，找到负载因子为 -2 的节点（9）右旋，剩下的就是上面已经介绍过的，节点交换什么的。如下：</p>
+<img src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_ll_demo.gif"/>
+
+<p>RR（右右）: 假设要在下面这棵树种插入 12</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">  8</span><br><span class="line"> &#x2F; \</span><br><span class="line">7   10</span><br><span class="line">    &#x2F; \</span><br><span class="line">   9   11</span><br></pre></td></tr></table></figure>
+
+<p>先确定各个节点的平衡因子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">    8 (+1)</span><br><span class="line">  &#x2F;       \</span><br><span class="line">7(0)      10(0)</span><br><span class="line">           &#x2F; \</span><br><span class="line">        9(0)  11(0)</span><br></pre></td></tr></table></figure>
+
+<p>插入 12 后，直接跳到最后一步：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">    8(+2)</span><br><span class="line">  &#x2F;       \</span><br><span class="line">7(0)      10(+1)</span><br><span class="line">           &#x2F; \</span><br><span class="line">        9(0)  11(+1)</span><br><span class="line">                \</span><br><span class="line">                12(0)</span><br></pre></td></tr></table></figure>
+
+<p>这种右重的情况左旋后可以达到平衡，找到负载因子为 +2 的节点（8）左旋：</p>
+<img src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/avl_tree/avl_rr_demo.gif"/>
+
+<p>LR（左右）：假设要在下面这棵树中插入 9</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">  10</span><br><span class="line"> &#x2F; </span><br><span class="line">7</span><br></pre></td></tr></table></figure>
+
+<p>先确定各个节点的平衡因子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">   10(-1)</span><br><span class="line">  &#x2F;       </span><br><span class="line">7(0)</span><br></pre></td></tr></table></figure>
+
+<p>插入 9 后，直接跳到最后一步：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">   10(-2)</span><br><span class="line">  &#x2F;      </span><br><span class="line">7(+1)    </span><br><span class="line"> \         </span><br><span class="line"> 9(0)</span><br></pre></td></tr></table></figure>
+
+<p>按照之前的套路，这种左重的情况需要右旋，找到负载因子为 -2 的节点（10）右旋，结果咋样呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"> 7(+2)</span><br><span class="line">  \     </span><br><span class="line">  10(-1)    </span><br><span class="line">  &#x2F;    </span><br><span class="line">9(0)</span><br></pre></td></tr></table></figure>
+
+<p>发现套路不好使了，这里就要用到两次旋转，第一次将旋转将 LR（左右）变成熟悉的 LL（左左），第二次旋转就可以用之前的套路了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">   10                              10                                9</span><br><span class="line">  &#x2F;                               &#x2F;                                 &#x2F;  \ </span><br><span class="line">7          (将 7 左旋) ---&gt;       9          (将 10 右旋) ---&gt;       7   10 </span><br><span class="line"> \                              &#x2F;</span><br><span class="line"> 9                             7</span><br></pre></td></tr></table></figure>
+
+<p>RL（右左）：假设要在下面这棵树中插入 9</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">8</span><br><span class="line">  \  </span><br><span class="line">   10</span><br></pre></td></tr></table></figure>
+
+<p>先确定各个节点的平衡因子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">8(+1)</span><br><span class="line">  \  </span><br><span class="line">   10(0)</span><br></pre></td></tr></table></figure>
+
+<p>插入 9 后，直接跳到最后一步：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">8(+2)</span><br><span class="line">  \  </span><br><span class="line">   10(-1)  </span><br><span class="line">   &#x2F;</span><br><span class="line">  9(0)</span><br></pre></td></tr></table></figure>
+
+<p>同样要用到两次旋转，第一次将旋转将RL（右左）变成熟悉的 RR（右右），第二次旋转就可以用之前的套路了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">8                                8                                9</span><br><span class="line">  \                               \                              &#x2F;  \</span><br><span class="line">   10       (将 10 右旋) ---&gt;        9       (将 8 左旋) ---&gt;     8    10</span><br><span class="line">   &#x2F;                                 \ </span><br><span class="line">  9                                   10</span><br></pre></td></tr></table></figure>
+
+<p>Enjoy –☺</p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>Android Transition (二) - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="在上篇对于 Transition 的框架和常用的 API 使用进行了分析，Transition 最常用的是在界面过渡方面，本文继续学习Transition 在界面过渡上的使用。在界面过渡上，Transition 分为不带共享元素的 Content Transition 和带共享元素的ShareEle">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="Android Transition (二)"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/cover_transition2.jpg" alt="Android Transition (二)">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>Android Transition (二)</h1>
+      <hr>
+      <span class="date">2017-09-27</span>
+    </div>
+
+    <p>在上篇对于 Transition 的框架和常用的 API 使用进行了分析，Transition 最常用的是在界面过渡方面，本文继续学习Transition 在界面过渡上的使用。在界面过渡上，Transition 分为不带共享元素的 Content Transition 和带共享元素的ShareElement Transition。</p>
+<h3 id="Content-Transition"><a href="#Content-Transition" class="headerlink" title="Content Transition"></a>Content Transition</h3><p>先看下 content transition 的一个例子，在 Google Play Games上 的应用：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition2_1.gif" style="zoom:75%"/>
+
+<p>在经过学习后我们也可以设计出类似的效果，首先需要了解在界面过渡中涉及到的一些重要方法，从 ActivtyA 调用startActivity 方法唤起 ActivityB ，到 ActivityB 按返回键返回 ActivityA 涉及到与 Transition 有关的方法</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition_A_to_B.png" />
+
+<ul>
+<li>ActivityA.exitTransition()</li>
+<li>ActivityB.enterTransition()</li>
+</ul>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition_B_to_A.png" />
+
+<ul>
+<li>ActivityB.returnTransition()</li>
+<li>ActivityA.reenterTransition()</li>
+</ul>
+<p>因此，只要我们在对应的方法中设置了 Transition 就可以了。在默认没有设置对应 Transition 的情况下，Material-theme应用的 exitTransition 为 null，enterTransition 为 Fade，如果 reenterTransition 和 returnTransition 未设定，则分别对应exitTransition 和 enterTransition。</p>
+<h4 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h4><p>在 style 中添加<code>android:windowContentTransitions</code> 属性启用窗口内容转换( Material-theme 应用默认为 true )，指定该 Activity 的 Transition</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- Base application theme. --&gt;</span><br><span class="line">&lt;style name&#x3D;&quot;AppTheme&quot; parent&#x3D;&quot;Theme.AppCompat.Light.DarkActionBar&quot;&gt;</span><br><span class="line">    &lt;!-- enable window content transitions --&gt;</span><br><span class="line">    &lt;item name&#x3D;&quot;android:windowContentTransitions&quot;&gt;true&lt;&#x2F;item&gt;</span><br><span class="line"></span><br><span class="line">    &lt;!-- specify enter and exit transitions --&gt;</span><br><span class="line">    &lt;!-- options are: explode, slide, fade --&gt;</span><br><span class="line">    &lt;item name&#x3D;&quot;android:windowEnterTransition&quot;&gt;@transition&#x2F;change_image_transform</span><br><span class="line">    &lt;&#x2F;item&gt;</span><br><span class="line">    &lt;item name&#x3D;&quot;android:windowExitTransition&quot;&gt;@transition&#x2F;change_image_transform</span><br><span class="line">    &lt;&#x2F;item&gt;</span><br><span class="line">&lt;&#x2F;style&gt;</span><br></pre></td></tr></table></figure>
+
+<p>也可以在代码中指定</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; inside your activity (if you did not enable transitions in your theme)</span><br><span class="line">getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);</span><br><span class="line">&#x2F;&#x2F; set an enter transition</span><br><span class="line">getWindow().setEnterTransition(new Explode());</span><br><span class="line">&#x2F;&#x2F; set an exit transition</span><br><span class="line">getWindow().setExitTransition(new Explode());</span><br></pre></td></tr></table></figure>
+
+<p>然后启动 Acticity</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">startActivity(intent,</span><br><span class="line">              ActivityOptions.makeSceneTransitionAnimation(this).toBundle());</span><br></pre></td></tr></table></figure>
+
+<h4 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h4><p>这里在代码中指定 ActivityA 的 exitTransition:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">private void setupTransition() &#123;</span><br><span class="line">        Slide slide &#x3D; new Slide(Gravity.LEFT);</span><br><span class="line">        slide.setDuration(1000);</span><br><span class="line">        slide.setInterpolator(new FastOutSlowInInterpolator());</span><br><span class="line">        getWindow().setExitTransition(slide);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用 xml 方式指定 ActivityB 的 enterTransition：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version&#x3D;&quot;1.0&quot; encoding&#x3D;&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;transitionSet xmlns:android&#x3D;&quot;http:&#x2F;&#x2F;schemas.android.com&#x2F;apk&#x2F;res&#x2F;android&quot;&gt;</span><br><span class="line">    &lt;slide</span><br><span class="line">        android:duration&#x3D;&quot;1000&quot;</span><br><span class="line">        android:interpolator&#x3D;&quot;@android:interpolator&#x2F;fast_out_slow_in&quot;</span><br><span class="line">        android:slideEdge&#x3D;&quot;bottom&quot;&gt;</span><br><span class="line">        &lt;targets&gt;</span><br><span class="line">            &lt;target android:targetId&#x3D;&quot;@id&#x2F;content_container&quot;&#x2F;&gt;</span><br><span class="line">        &lt;&#x2F;targets&gt;</span><br><span class="line">    &lt;&#x2F;slide&gt;</span><br><span class="line">    &lt;slide</span><br><span class="line">        android:duration&#x3D;&quot;1000&quot;</span><br><span class="line">        android:interpolator&#x3D;&quot;@android:interpolator&#x2F;fast_out_slow_in&quot;</span><br><span class="line">        android:slideEdge&#x3D;&quot;top&quot;&gt;</span><br><span class="line">        &lt;targets&gt;</span><br><span class="line">            &lt;target android:targetId&#x3D;&quot;@id&#x2F;image_container&quot;&#x2F;&gt;</span><br><span class="line">        &lt;&#x2F;targets&gt;</span><br><span class="line">    &lt;&#x2F;slide&gt;</span><br><span class="line">&lt;&#x2F;transitionSet&gt;</span><br></pre></td></tr></table></figure>
+
+<p>运行效果如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition2_3.gif" style="zoom:50%"/>
+
+<p>上图动画有两个问题:</p>
+<ol>
+<li>ActivityA的exitTransition 还没完全走完 ActivityB 的 enterTransition 就执行了，ActivityB 的 returnTransition 还没完全走完 ActivityA 的 reenterTransition就执行了；</li>
+<li>状态栏和导航栏的动画不太协调;</li>
+</ol>
+<p>问题1是因为默认情况下 enter/return transition 会比 exit/reenter transition 完全结束前稍微快一点运行，如果想让前者完全运行完后者再进来，可以在代码中调用<code>Window</code>的</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">setWindowAllowEnterTransitionOverlap(false)</span><br><span class="line">setWindowAllowReturnTransitionOverlap(false)</span><br></pre></td></tr></table></figure>
+
+<p>或者在 xml 中设置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;item name&#x3D;&quot;android:windowAllowEnterTransitionOverlap&quot;&gt;false&lt;&#x2F;item&gt; </span><br><span class="line">&lt;item name&#x3D;&quot;android:windowAllowReturnTransitionOverlap&quot;&gt;false&lt;&#x2F;item&gt;</span><br></pre></td></tr></table></figure>
+
+<p>运行如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition2_2.gif" style="zoom:50%"/>
+
+<p>再看下问题2，默认情况下状态栏和标题栏也会参与动画(如果有导航栏也会，测试机默认木有导航栏)，当我们把xxxoverlap 属性设为 false 后就看得比较明显了，如果不想让它们参与动画通过<code>excludeTarget()</code>将其排除，在代码中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">private void setupTransition() &#123;</span><br><span class="line">    Slide slide &#x3D; new Slide(Gravity.LEFT);</span><br><span class="line">    slide.setDuration(1000);</span><br><span class="line">    slide.setInterpolator(new FastOutSlowInInterpolator());</span><br><span class="line">    slide.excludeTarget(android.R.id.statusBarBackground, true);</span><br><span class="line">    slide.excludeTarget(android.R.id.navigationBarBackground, true);</span><br><span class="line">    slide.excludeTarget(R.id.appbar,true);</span><br><span class="line">    getWindow().setExitTransition(slide);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>或者在 xml 中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;slide xmlns:android&#x3D;&quot;http:&#x2F;&#x2F;schemas.android.com&#x2F;apk&#x2F;res&#x2F;android&quot;</span><br><span class="line">    android:slideEdge&#x3D;&quot;left&quot;</span><br><span class="line">    android:interpolator&#x3D;&quot;@android:interpolator&#x2F;fast_out_slow_in&quot;</span><br><span class="line">    android:duration&#x3D;&quot;1000&quot;&gt;</span><br><span class="line"></span><br><span class="line">    &lt;targets&gt;</span><br><span class="line">        &lt;target android:excludeId&#x3D;&quot;@id&#x2F;appbar&quot; &#x2F;&gt;</span><br><span class="line">        &lt;target android:excludeId&#x3D;&quot;@android:id&#x2F;statusBarBackground&quot;&#x2F;&gt;</span><br><span class="line">        &lt;target android:excludeId&#x3D;&quot;@android:id&#x2F;navigationBarBackground&quot;&#x2F;&gt;</span><br><span class="line">    &lt;&#x2F;targets&gt;</span><br><span class="line"></span><br><span class="line">&lt;&#x2F;slide&gt;</span><br></pre></td></tr></table></figure>
+
+<p>效果如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition2_4.gif" style="zoom:50%"/>
+
+<h4 id="具体流程"><a href="#具体流程" class="headerlink" title="具体流程"></a>具体流程</h4><p>ActivityA startActivity()<br>1.确定需要执行 exit Transition 的 target View<br>2.Transition 的 captureStartValues() 获取 target View Visibility 的值(此时为VISIBLE)<br>3.将 target View Visibility 的值设为 INVISIBLE<br>4.Transition 的 captureEndValues() 获取 target View Visibility 的值(此时为INVISIBLE)<br>5.Transition 的 createAnimator() 根据前后 Visibility 的属性值变化创建动画</p>
+<p>ActivityB Activity 开始<br>1.确定需要执行 enter Transition的target View<br>2.Transition 的 captureStartValues() 获取 target View Visibility 的值，初始化为INVISIBLE<br>3.将 target View Visibility 的值设为 VISIBLE<br>4.Transition 的 captureEndValues() 获取 target View Visibility 的值(此时为VISIBLE)<br>5.Transition 的 createAnimator() 根据前后 Visibility 的属性值变化创建动画</p>
+<h3 id="ShareElement-Transition"><a href="#ShareElement-Transition" class="headerlink" title="ShareElement Transition"></a>ShareElement Transition</h3><p>shareElement Transition 的例子</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition_app1.gif" style="zoom:75%"/>
+
+<p>shareElement Transition 指的是共享元素从 activity/fragment 到其他 activity/fragment 时的动画</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/shared_element.png" />
+
+<p>有了上面的分析看名字应该也猜得出方法对应的功能了，如果没有设置 exit/enter shared element transitions，默认为 <a href="https://github.com/android/platform_frameworks_base/blob/lollipop-release/core/res/res/transition/move.xml" target="_blank" rel="noopener"><code>@android:transition/move</code></a>，上面的 Content Transition 是根据 Visibility 的变化创建动画，而 shareElement Transition是根据大小，位置，和外观的变化创建动画，如 chanageBounds、changeTransform、ChangeClipBounds、 ChangeImageTransform 等，具体API使用和效果可以参考上篇。指定 shareElement Transition 可以通过代码形式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">getWindow().setSharedElementEnterTransition();</span><br><span class="line">getWindow().setSharedElementExitTransition();</span><br><span class="line">getWindow().setSharedElementReturnTransition();</span><br><span class="line">getWindow().setSharedElementReenterTransition();</span><br></pre></td></tr></table></figure>
+
+<p>也可以通过 xml 形式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- Base application theme. --&gt;</span><br><span class="line">&lt;style name&#x3D;&quot;AppTheme&quot; parent&#x3D;&quot;Theme.AppCompat.Light.DarkActionBar&quot;&gt;</span><br><span class="line">    &lt;!-- specify shared element transitions --&gt;</span><br><span class="line">    &lt;item name&#x3D;&quot;android:windowSharedElementEnterTransition&quot;&gt;</span><br><span class="line">      @transition&#x2F;change_image_transform&lt;&#x2F;item&gt;</span><br><span class="line">    &lt;item name&#x3D;&quot;android:windowSharedElementExitTransition&quot;&gt;</span><br><span class="line">      @transition&#x2F;change_image_transform&lt;&#x2F;item&gt;</span><br><span class="line">&lt;&#x2F;style&gt;</span><br></pre></td></tr></table></figure>
+
+<p>然后启动 Acticity</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Intent intent &#x3D; new Intent(this, DetailsActivity.class);</span><br><span class="line">&#x2F;&#x2F; Pass data object in the bundle and populate details activity.</span><br><span class="line">intent.putExtra(DetailsActivity.EXTRA_CONTACT, contact);</span><br><span class="line">ActivityOptionsCompat options &#x3D; ActivityOptionsCompat.</span><br><span class="line">    makeSceneTransitionAnimation(this, (View)ivProfile, &quot;profile&quot;);</span><br><span class="line">startActivity(intent, options.toBundle());</span><br></pre></td></tr></table></figure>
+
+<p>在布局文件中对于要共享的 View 添加<code>android:transitionName</code>且保持一致，如果要共享的 View 有点多，可以通过Pair，Pair&lt;View,String&gt; 存储着共享 View 和 View 的名称，使用如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Intent intent &#x3D; new Intent(context, DetailsActivity.class);</span><br><span class="line">intent.putExtra(DetailsActivity.EXTRA_CONTACT, contact);</span><br><span class="line">Pair&lt;View, String&gt; p1 &#x3D; Pair.create((View)ivProfile, &quot;profile&quot;);</span><br><span class="line">Pair&lt;View, String&gt; p2 &#x3D; Pair.create(vPalette, &quot;palette&quot;);</span><br><span class="line">Pair&lt;View, String&gt; p3 &#x3D; Pair.create((View)tvName, &quot;text&quot;);</span><br><span class="line">ActivityOptionsCompat options &#x3D; ActivityOptionsCompat.</span><br><span class="line">    makeSceneTransitionAnimation(this, p1, p2, p3);</span><br><span class="line">startActivity(intent, options.toBundle());</span><br></pre></td></tr></table></figure>
+
+<h4 id="例子-1"><a href="#例子-1" class="headerlink" title="例子"></a>例子</h4><p>在 ActivityB 的 theme 中添加 SharedElementEnterTransition </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;item name&#x3D;&quot;android:windowSharedElementEnterTransition&quot;&gt;</span><br><span class="line">@transition&#x2F;change_image_transform</span><br><span class="line">&lt;&#x2F;item&gt;</span><br></pre></td></tr></table></figure>
+
+<p>change_image_transform.xml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version&#x3D;&quot;1.0&quot; encoding&#x3D;&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;transitionSet xmlns:android&#x3D;&quot;http:&#x2F;&#x2F;schemas.android.com&#x2F;apk&#x2F;res&#x2F;android&quot;&gt;</span><br><span class="line">    &lt;changeBounds</span><br><span class="line">        android:duration&#x3D;&quot;1000&quot;</span><br><span class="line">        android:interpolator&#x3D;&quot;@android:interpolator&#x2F;fast_out_slow_in&quot;&#x2F;&gt;</span><br><span class="line">    &lt;changeImageTransform</span><br><span class="line">        android:duration&#x3D;&quot;1000&quot;</span><br><span class="line">        android:interpolator&#x3D;&quot;@android:interpolator&#x2F;fast_out_slow_in&quot;&#x2F;&gt;</span><br><span class="line">&lt;&#x2F;transitionSet&gt;</span><br></pre></td></tr></table></figure>
+
+<p>执行效果：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition2_6.gif" style="zoom:50%"/>
+
+<h4 id="具体流程-1"><a href="#具体流程-1" class="headerlink" title="具体流程"></a>具体流程</h4><p>从图上看，好像图片是从一个 ActivityA “传递” 到另一个 ActivityB，实际上真正负责绘制都发生在 ActivityB 上：</p>
+<p>1.ActivityA 调用 startActivity() 后 ActivityB 处于透明状态</p>
+<p>2.Transition 收集 ActivityA 中共享 View 的初识状态，并传递给 ActivityB</p>
+<p>3.Transition 收集 ActivityB 中共享 View 的最终状态</p>
+<p>4.Transition 根据状态改变创建动画</p>
+<p>5.Transition 隐藏 ActivityA ，随着 ActivityB 的共享 View 运动到指定位置，ActivityB 的背景在 ActivityA 上淡入，并随着动画完成而完全可见。</p>
+<p>我们可以通过修改 Activity 背景淡入淡出时间来验证，在ActivityB 中加入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getWindow().setTransitionBackgroundFadeDuration(2000);</span><br></pre></td></tr></table></figure>
+
+<p>为了更直观，把 ActivityA 的 exitTransition 先注释掉，运行效果：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/transition2_7.gif" style="zoom:50%"/>
+
+<p>可以看到，ActivityB 确实像盖在 ActivityA 上，这里用到了 <a href="https://developer.android.com/reference/android/view/ViewOverlay.html" target="_blank" rel="noopener">ViewOverlay</a>，原理简单来说就是在其他 View上draw ，共享View 利用该技术可以实现画在其他 View 上。我们可以通过<code>Window</code>的<code>setSharedElementsUseOverlay(false)</code>来关闭该功能，不过这样一来会使最终结果和你预想的不一致，默认该值为 true 。</p>
+<h4 id="延迟加载"><a href="#延迟加载" class="headerlink" title="延迟加载"></a>延迟加载</h4><p>上面分析 Transition 会获取共享视图前后的状态值来创建动画，如果我们的图片是网上下载的，那么很有可能图片的准确大小需要下载下来才能确定，Activity Transitions API 提供了一对方法暂时推迟过渡，直到我们确切地知道共享元素已经被适当的渲染和放置。在 onCreate 中调用 postponeEnterTransition()(API &gt;= 21) 或者 supportPostponeEnterTransition()（API &lt; 21）延迟过渡；当图片的状态确定后，调用 startPostponedEnterTransition()（API &gt;= 21）或supportStartPostponedEnterTransition()（API &lt; 21）恢复过渡，常见处理：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; ... load remote image with Glide&#x2F;Picasso here</span><br><span class="line"></span><br><span class="line">supportPostponeEnterTransition();</span><br><span class="line">ivBackdrop.getViewTreeObserver().addOnPreDrawListener(</span><br><span class="line">    new ViewTreeObserver.OnPreDrawListener() &#123;</span><br><span class="line">        @Override</span><br><span class="line">        public boolean onPreDraw() &#123;</span><br><span class="line">            ivBackdrop.getViewTreeObserver().removeOnPreDrawListener(this);</span><br><span class="line">            supportStartPostponedEnterTransition();</span><br><span class="line">            return true;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Thanks-to"><a href="#Thanks-to" class="headerlink" title="Thanks to"></a>Thanks to</h3><ul>
+<li><a href="https://github.com/lgvalle/Material-Animations" target="_blank" rel="noopener">Material-Animations</a></li>
+<li><a href="http://www.androiddesignpatterns.com/2014/12/activity-fragment-transitions-in-android-lollipop-part1.html" target="_blank" rel="noopener">Getting Started with Activity &amp; Fragment Transitions (part 1-4)</a></li>
+<li><a href="https://halfthought.wordpress.com/2014/12/08/what-are-all-these-dang-transitions/" target="_blank" rel="noopener">What are all these dang Transitions</a></li>
+<li><a href="https://github.com/codepath/android_guides/wiki/Shared-Element-Activity-Transition" target="_blank" rel="noopener">Shared Element Activity Transition</a></li>
+<li><a href="https://developer.android.com/training/material/animations.html#Transitions" target="_blank" rel="noopener">Define custom animations</a></li>
+<li><a href="https://github.com/atoennis/Presentation-ContentTransition" target="_blank" rel="noopener">Presentation-ContentTransition</a></li>
+</ul>
+<p><a href="https://github.com/Rkhcy/TransitionNote2" target="_blank" rel="noopener">本文代码</a></p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

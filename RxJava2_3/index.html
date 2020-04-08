@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>图解 RxJava2 - observeOn - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="上篇文章分析了 RxJava 中 subscribeOn 方法的实现原理，然而只使用 subscribeOn 发现上下游都是执行在子线程中。在日常开发中往往是将上游耗时任务通过 subscribeOn 指定在子线程中，下游通常是更新 UI 等需要在主线程中进行，使用 observeOn(Androi">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="图解 RxJava2 - observeOn"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/cover_observeOn.jpg" alt="图解 RxJava2 - observeOn">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>图解 RxJava2 - observeOn</h1>
+      <hr>
+      <span class="date">2017-12-22</span>
+    </div>
+
+    <p>上篇文章分析了 RxJava 中 subscribeOn 方法的实现原理，然而只使用 subscribeOn 发现上下游都是执行在子线程中。在日常开发中往往是将上游耗时任务通过 subscribeOn 指定在子线程中，下游通常是更新 UI 等需要在主线程中进行，使用 observeOn(AndroidSchedulers.mainThread()) 就能实现，那么它是怎么做到的呢？</p>
+<h3 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h3><p>基于上篇文章的代码，修改上下游联系，添加 observeOn(AndroidSchedulers.mainThread())</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">source.subscribeOn(Schedulers.newThread())</span><br><span class="line">        .observeOn(AndroidSchedulers.mainThread())</span><br><span class="line">        .subscribe(observer);</span><br><span class="line">Log.e(TAG, &quot;其他任务执行&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>打印如下</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_001.png" style="zoom:50%"/>
+
+<p>此时主线程中的「其他任务」没有被阻塞，上游的耗时任务在子线程 RxNewThreadScheduler-1 中执行，而下游接收任务在主线程中进行，并且事件传递不保证顺序(多次执行输出可能都不同)，这也是多线程执行顺序的不确定性特点，上篇已介绍过。</p>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">source.subscribeOn(Schedulers.newThread())</span><br><span class="line">        .observeOn(AndroidSchedulers.mainThread())</span><br><span class="line">        .subscribe(observer);</span><br></pre></td></tr></table></figure>
+
+<p>有前两篇分析经历，现在就轻车熟路：执行 Observable.create 、 new Observer 、Schedulers.newThread()、</p>
+<p>subscribeOn(Scheduler) 后此时主线程应该是下面的样子</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_01.gif" style="zoom:100%"/>
+
+<h4 id="AndroidSchedulers-mainThread"><a href="#AndroidSchedulers-mainThread" class="headerlink" title="AndroidSchedulers.mainThread()"></a>AndroidSchedulers.mainThread()</h4><p>AndroidSchedulers 是 <a href="https://github.com/ReactiveX/RxAndroid" target="_blank" rel="noopener">RxAndroid</a> 中提供的，使用前需要在 Android Studio 中添加依赖。mainThread() 最后会创建 HandlerScheduler：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new HandlerScheduler(new Handler(Looper.getMainLooper()));</span><br></pre></td></tr></table></figure>
+
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_002.jpg" style="zoom:100%"/>
+
+<p>HandlerScheduler 也是 Scheduler 的子类，在初始化 HandlerScheduler 的时候创建了一个持有主线程 Looper 的 Handler ，可以猜想后面线程切换很有可能就是 Handler 机制的那一套。此时的主线程</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_03.gif" style="zoom:100%"/>
+
+<h4 id="observeOn-Scheduler-scheduler"><a href="#observeOn-Scheduler-scheduler" class="headerlink" title="observeOn(Scheduler scheduler)"></a>observeOn(Scheduler scheduler)</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">public final Observable&lt;T&gt; observeOn(Scheduler scheduler) &#123;</span><br><span class="line">    &#x2F;&#x2F;bufferSize()默认为128</span><br><span class="line">    return observeOn(scheduler, false, bufferSize());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&#x2F;**</span><br><span class="line"> * @param scheduler 调度器</span><br><span class="line"> * @param delayError 发生异常是否马上结束事件流</span><br><span class="line"> * @param bufferSize 缓存队列的默认大小</span><br><span class="line"> * @return Observable</span><br><span class="line"> *&#x2F;</span><br><span class="line">public final Observable&lt;T&gt; observeOn(Scheduler scheduler, </span><br><span class="line">    boolean delayError, int bufferSize) &#123;</span><br><span class="line">    &#x2F;&#x2F;省略判空代码</span><br><span class="line">    &#x2F;&#x2F;这里的this就是之前传下来的ObservableSubscribeOn(黄焖鸡饭店)</span><br><span class="line">    return RxJavaPlugins.onAssembly(new ObservableObserveOn&lt;T&gt;(this, </span><br><span class="line">        scheduler, delayError, bufferSize));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该方法返回 Observable ，创建了 ObservableObserveOn(已经习惯了，就这几个英文单词排列组合)，它也是 Observable 的子类，结合我们举的例子，就给它起名肯德基，肯德基持有黄焖鸡饭店的引用，初始化如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">class ObservableObserveOn&lt;T&gt; extends AbstractObservableWithUpstream&lt;T, T&gt; &#123;</span><br><span class="line">    final Scheduler scheduler;</span><br><span class="line">    final boolean delayError;</span><br><span class="line">    final int bufferSize;</span><br><span class="line">    public ObservableObserveOn(ObservableSource&lt;T&gt; source, </span><br><span class="line">        Scheduler scheduler, boolean delayError, int bufferSize) &#123;</span><br><span class="line">        super(source);</span><br><span class="line">        this.scheduler &#x3D; scheduler;</span><br><span class="line">        this.delayError &#x3D; delayError;</span><br><span class="line">        this.bufferSize &#x3D; bufferSize;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    &#x2F;&#x2F;省略其他代码</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此时的主线程</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_04.gif" style="zoom:100%"/>
+
+<h4 id="subscribe-Observer-observer"><a href="#subscribe-Observer-observer" class="headerlink" title="subscribe(Observer observer)"></a>subscribe(Observer observer)</h4><p>由上两篇分析可知，这里会先去执行 ObservableObserveOn(肯德基) 的 subscribeActual(observer) 方法，这里的 observer 是顾客小明</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">protected void subscribeActual(Observer&lt;? super T&gt; observer) &#123;</span><br><span class="line">    if (scheduler instanceof TrampolineScheduler) &#123;</span><br><span class="line">        source.subscribe(observer);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        &#x2F;&#x2F;步骤①</span><br><span class="line">        Scheduler.Worker w &#x3D; scheduler.createWorker();</span><br><span class="line">        &#x2F;&#x2F;步骤② source 即 ObservableSubscribeOn(黄焖鸡饭店)</span><br><span class="line">        source.subscribe(new ObserveOnObserver&lt;T&gt;(observer, w, </span><br><span class="line">            delayError, bufferSize));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>步骤① 和上篇一样，这里也会创建 Worker，具体实现在 HandlerScheduler 中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public Worker createWorker() &#123;</span><br><span class="line">    return new HandlerWorker(handler);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">private static final class HandlerWorker extends Worker &#123;</span><br><span class="line">    private final Handler handler;</span><br><span class="line">        </span><br><span class="line">    HandlerWorker(Handler handler) &#123;</span><br><span class="line">        this.handler &#x3D; handler;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;省略其他代码</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>并把之前持有主线程 Looper 的 Handler 传进去。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_05.gif" style="zoom:100%"/>
+
+<p>步骤② 先创建了 ObserveOnObserver(总起这种很操蛋的名字)，作为 ObservableObserveOn(肯德基)的内部类，它是 BasicIntQueueDisposable 的子类(保证原子性、拥有操作队列功能、保证一次性操作)，实现Observer接口(也是个顾客)。结合例子，就给它起名叫顾客小强，只是这个小强功能比较强大，小强持有小明的引用。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_06.gif" style="zoom:100%"/>
+
+<p>接着执行 ObservableSubscribeOn(黄焖鸡饭店)的 subscribe ，具体实现是 subscribeActual :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public void subscribeActual(final Observer&lt;? super T&gt; s) &#123;</span><br><span class="line">    &#x2F;&#x2F;小红登场，持有小强的引用</span><br><span class="line">    final SubscribeOnObserver&lt;T&gt; parent &#x3D; new SubscribeOnObserver&lt;T&gt;(s);</span><br><span class="line">    &#x2F;&#x2F;调用小强的onSubscribe，把小红传进去</span><br><span class="line">    s.onSubscribe(parent);</span><br><span class="line"></span><br><span class="line">    parent.setDisposable(scheduler.scheduleDirect(new SubscribeTask(parent)));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看下小强(ObserveOnObserver)的 onSubscribe：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public void onSubscribe(Disposable s) &#123;</span><br><span class="line">    &#x2F;&#x2F;判空操作</span><br><span class="line">    if (DisposableHelper.validate(this.s, s)) &#123;</span><br><span class="line">        this.s &#x3D; s;</span><br><span class="line">        &#x2F;&#x2F;小红不是 QueueDisposable 类型</span><br><span class="line">        if (s instanceof QueueDisposable) &#123;</span><br><span class="line">            &#x2F;&#x2F;省略部分代码</span><br><span class="line">        &#125;</span><br><span class="line">        &#x2F;&#x2F; 创建一个大小为128的队列</span><br><span class="line">        queue &#x3D; new SpscLinkedArrayQueue&lt;T&gt;(bufferSize);</span><br><span class="line">        &#x2F;&#x2F;actual是小明，执行小明的 onSubscribe ，所以看到 log 打印了</span><br><span class="line">        actual.onSubscribe(this);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里创建了一个队列，大小为128。到目前为止所有操作都发生在主线程中。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_07.gif" style="zoom:100%"/>
+
+<p>回到上面，继续执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">parent.setDisposable(scheduler.scheduleDirect(new SubscribeTask(parent)));</span><br></pre></td></tr></table></figure>
+
+<p>上篇文章已经介绍过了，具体流程如下</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_08.gif" style="zoom:100%"/>
+
+<p>在上篇介绍到这的时候说，接下来的操作都是在子线程中进行的，那此时这里会有什么转折呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">protected void subscribeActual(Observer&lt;? super T&gt; observer) &#123;</span><br><span class="line">    &#x2F;&#x2F;创建服务员，并和顾客联系，这里的顾客是小红</span><br><span class="line">    CreateEmitter&lt;T&gt; parent &#x3D; new CreateEmitter&lt;T&gt;(observer);</span><br><span class="line">    &#x2F;&#x2F;执行顾客小红的的 onSubscribe </span><br><span class="line">    observer.onSubscribe(parent);</span><br><span class="line"></span><br><span class="line">    try &#123;</span><br><span class="line">        &#x2F;&#x2F;厨师做菜，并和服务员联系</span><br><span class="line">        source.subscribe(parent);</span><br><span class="line">    &#125; catch (Throwable ex) &#123;</span><br><span class="line">        Exceptions.throwIfFatal(ex);</span><br><span class="line">        parent.onError(ex);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>后续还有：服务员端菜(CreateEmitter.onNext) —&gt; 顾客小红拿到菜(SubscribeOnObserver.onNext) ，到这里都是执行在子线程中(卧槽，怎么还没切线程啊，这都快走完了)，接着小强拿到菜(ObserveOnObserver.onNext)，看下代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">public void onNext(T t) &#123;</span><br><span class="line">    if (done) &#123;</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;上游数据类型不是异步的</span><br><span class="line">    if (sourceMode !&#x3D; QueueDisposable.ASYNC) &#123;</span><br><span class="line">        &#x2F;&#x2F;将上游下发的数据放入队列中</span><br><span class="line">        queue.offer(t);</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F;调度</span><br><span class="line">    schedule();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">void schedule() &#123;</span><br><span class="line">    &#x2F;&#x2F;保证原子性操作</span><br><span class="line">    if (getAndIncrement() &#x3D;&#x3D; 0) &#123;</span><br><span class="line">        &#x2F;&#x2F;执行HandlerWorker的schedule，传入的this也就是小强</span><br><span class="line">        &#x2F;&#x2F;上面说了小强很强大，除了顾客身份，还是个Runnable</span><br><span class="line">        worker.schedule(this);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后执行 HandlerScheduler 的 schedule</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">public Disposable schedule(Runnable run, long delay, TimeUnit unit) &#123;</span><br><span class="line">    if (run &#x3D;&#x3D; null) throw new NullPointerException(&quot;run &#x3D;&#x3D; null&quot;);</span><br><span class="line">    if (unit &#x3D;&#x3D; null) throw new NullPointerException(&quot;unit &#x3D;&#x3D; null&quot;);</span><br><span class="line"></span><br><span class="line">    if (disposed) &#123;</span><br><span class="line">        return Disposables.disposed();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    run &#x3D; RxJavaPlugins.onSchedule(run);</span><br><span class="line"></span><br><span class="line">    ScheduledRunnable scheduled &#x3D; new ScheduledRunnable(handler, run);</span><br><span class="line"></span><br><span class="line">    Message message &#x3D; Message.obtain(handler, scheduled);</span><br><span class="line">    message.obj &#x3D; this; </span><br><span class="line">    &#x2F;&#x2F;这里的handler持有mainLooper，所以传进去的Runnable会在主线程中执行</span><br><span class="line">    handler.sendMessageDelayed(message, Math.max(0L, unit.toMillis(delay)));</span><br><span class="line"></span><br><span class="line">    if (disposed) &#123;</span><br><span class="line">        handler.removeCallbacks(scheduled);</span><br><span class="line">        return Disposables.disposed();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return scheduled;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>原来用的是 Handler 机制来完成的，那 Runnable 具体执行的是什么呢？看下小强的 run 方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">public void run() &#123;</span><br><span class="line">    &#x2F;&#x2F;默认为false</span><br><span class="line">    if (outputFused) &#123;</span><br><span class="line">        drainFused();</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        drainNormal();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">void drainNormal() &#123;</span><br><span class="line">    int missed &#x3D; 1;</span><br><span class="line">    &#x2F;&#x2F;获取队列引用</span><br><span class="line">    final SimpleQueue&lt;T&gt; q &#x3D; queue;</span><br><span class="line">    &#x2F;&#x2F;获取小明引用</span><br><span class="line">    final Observer&lt;? super T&gt; a &#x3D; actual;</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    for (;;) &#123;</span><br><span class="line">        &#x2F;&#x2F;检查是否没有数据要发送</span><br><span class="line">        if (checkTerminated(done, q.isEmpty(), a)) &#123;</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        for (;;) &#123;</span><br><span class="line">            boolean d &#x3D; done;</span><br><span class="line">            T v;</span><br><span class="line"></span><br><span class="line">            try &#123;</span><br><span class="line">                &#x2F;&#x2F;从队列中取数据</span><br><span class="line">                v &#x3D; q.poll();</span><br><span class="line">            &#125; catch (Throwable ex) &#123;</span><br><span class="line">                Exceptions.throwIfFatal(ex);</span><br><span class="line">                s.dispose();</span><br><span class="line">                q.clear();</span><br><span class="line">                a.onError(ex);</span><br><span class="line">                worker.dispose();</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line">            boolean empty &#x3D; v &#x3D;&#x3D; null;</span><br><span class="line"></span><br><span class="line">            if (checkTerminated(d, empty, a)) &#123;</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            if (empty) &#123;</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">            &#x2F;&#x2F;执行小明的onNext()</span><br><span class="line">            a.onNext(v);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        missed &#x3D; addAndGet(-missed);</span><br><span class="line">        if (missed &#x3D;&#x3D; 0) &#123;</span><br><span class="line">            break;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>就是从队列中取出传过来的数据，交给小明的 onNext 方法执行，所以小明的 onNext 是在主线程中执行，这部分流程如下(Queue 即小强内部维护的队列)：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_09.gif" style="zoom:100%"/>
+
+<p>上图的事件调度不保证顺序，只是模拟了其中一种情况。</p>
+<h3 id="多次observeOn"><a href="#多次observeOn" class="headerlink" title="多次observeOn"></a>多次observeOn</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">source.subscribeOn(Schedulers.newThread())</span><br><span class="line">        .observeOn(AndroidSchedulers.mainThread())</span><br><span class="line">        .observeOn(Schedulers.newThread())</span><br><span class="line">        .subscribe(observer);</span><br></pre></td></tr></table></figure>
+
+<p>上面我先把下游接收事件指定在主线程，再指定在一个新的线程，打印如下：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_0_10.png" style="zoom:50%"/>
+
+<p>看到此时下游接收事件被成功执行在后指定的新线程，这里是怎么实现的呢？分解下代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">source.subscribeOn(Schedulers.newThread())</span><br><span class="line">        .observeOn(AndroidSchedulers.mainThread())</span><br></pre></td></tr></table></figure>
+
+<p>执行到这的时候应该是这样的</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_0_11.png" style="zoom:50%"/>
+
+<p>这也是上面分析过的， subscribeOn 返回的 Observable 称为黄焖鸡店(ObservableSubscribeOn)，observeOn 返回的 Observable 称为肯德基1号店(ObservableObserveOn)，肯德基1号店持有黄焖鸡店的引用；接着</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.observeOn(Schedulers.newThread())</span><br></pre></td></tr></table></figure>
+
+<p>执行到这的时候应该是这样的</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_0_12.png" style="zoom:50%"/>
+
+<p>把第二次 observeOn 返回的 Observable 称为肯德基2号店(ObservableObserveOn)，肯德基2号店持有1号店的引用；接着</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.subscribe(observer);</span><br></pre></td></tr></table></figure>
+
+<p>会先执行肯德基2号店的 subscribeActual 方法，这里的 observer 是小明</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">protected void subscribeActual(Observer&lt;? super T&gt; observer) &#123;</span><br><span class="line">    if (scheduler instanceof TrampolineScheduler) &#123;</span><br><span class="line">        source.subscribe(observer);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        &#x2F;&#x2F;此时schduler是NewThreadScheduler,创建的worker是NewThreadWorker</span><br><span class="line">        Scheduler.Worker w &#x3D; scheduler.createWorker();</span><br><span class="line">        &#x2F;&#x2F;source是肯德基1号店，observer是小明</span><br><span class="line">        source.subscribe(new ObserveOnObserver&lt;T&gt;(observer, w,</span><br><span class="line">            delayError, bufferSize));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里会创建小强(ObserveOnObserver)，为了和后面区分开，就叫他2号店小强，2号店小强持有小明的引用，之后执行肯德基1号店的 subscribeActual ，observer 是肯德基2号店小强</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">protected void subscribeActual(Observer&lt;? super T&gt; observer) &#123;</span><br><span class="line">    if (scheduler instanceof TrampolineScheduler) &#123;</span><br><span class="line">        source.subscribe(observer);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        &#x2F;&#x2F;此时schduler是HandlerScheduler，创建的Worker是HandlerWorker</span><br><span class="line">        Scheduler.Worker w &#x3D; scheduler.createWorker();</span><br><span class="line">        &#x2F;&#x2F;source是黄焖鸡店，observer是肯德基2号店小强</span><br><span class="line">        source.subscribe(new ObserveOnObserver&lt;T&gt;(observer, w, </span><br><span class="line">            delayError, bufferSize));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里又创建了小强，就叫他肯德基1号店小强，1号店小强持有2号店小强的引用，整个过程如下</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_10.gif" style="zoom:100%"/>
+
+<p>接着执行黄焖鸡店的 subscribeActual，observer 是肯德基1号店小强</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public void subscribeActual(final Observer&lt;? super T&gt; s) &#123;</span><br><span class="line">    &#x2F;&#x2F;s 是肯德基1号店小强，小红登场，小红持有1号店小强引用</span><br><span class="line">    final SubscribeOnObserver&lt;T&gt; parent &#x3D; new SubscribeOnObserver&lt;T&gt;(s);</span><br><span class="line">    &#x2F;&#x2F;执行1号店小强的onSubscribe方法</span><br><span class="line">    s.onSubscribe(parent);</span><br><span class="line">    &#x2F;&#x2F;此时schduler是NewThreadScheduler</span><br><span class="line">    parent.setDisposable(scheduler.scheduleDirect(new SubscribeTask(parent)));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行到上面 s.onSubscribe(parent) 是应该是这样的</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_11.gif" style="zoom:100%"/>
+
+<p>因此 onSubscribe 方法还是执行在主线程中；其实看到这就有点明白了，就是一层层的回调…接着执行后面的流程，直接上图</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/rxjava2_2_12.gif" style="zoom:100%"/>
+
+<p>上图省略了其他事件，并且省略了事件入队的过程，至此分析完毕。</p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

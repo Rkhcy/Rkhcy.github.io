@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>红黑树 - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="红黑树是什么和上篇介绍的 AVL 树一样，红黑树也是一种自平衡的二叉查找树，通过之前的学习我们知道，自平衡的二叉查找树是高效的，它可以在时间复杂度为下做查找、插入和删除。红黑树具备如下性质：
+
+节点非红即黑（空节点和根节点为黑色）
+不能出现连续两个红色节点
+任意节点到空节点的路径需包含数量相同的黑色">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="红黑树"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/red_black_tree.jpg" alt="红黑树">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>红黑树</h1>
+      <hr>
+      <span class="date">2019-02-14</span>
+    </div>
+
+    <h2 id="红黑树是什么"><a href="#红黑树是什么" class="headerlink" title="红黑树是什么"></a><strong>红黑树是什么</strong></h2><p>和上篇介绍的 AVL 树一样，红黑树也是一种自平衡的二叉查找树，通过之前的学习我们知道，自平衡的二叉查找树是高效的，它可以在时间复杂度为<img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/67697a0b44080bbf967c00d60bf4aac79f9ce385" alt="img">下做查找、插入和删除。红黑树具备如下性质：</p>
+<ol>
+<li>节点非红即黑（空节点和根节点为黑色）</li>
+<li>不能出现连续两个红色节点</li>
+<li>任意节点到空节点的路径需包含数量相同的黑色节点</li>
+</ol>
+<p>下面是红黑树的例子：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_demo.png">
+</center>
+
+<p>红黑树复杂的地方主要在于对其执行增删操作会破坏上面的红黑属性，因此要有相应的机制恢复。这里的恢复机制除了在介绍 <a href="http://rkhcy.github.io/2019/01/21/AVL_Tree/" target="_blank" rel="noopener">AVL Tree</a> 时讲到的旋转，还多了一种<code>重新着色</code>，顾名思义，把红色变成黑色，黑色变成红色即可，在下面的介绍中会具体讲到。</p>
+<h2 id="红黑树的插入"><a href="#红黑树的插入" class="headerlink" title="红黑树的插入"></a><strong>红黑树的插入</strong></h2><p>先看下红黑树插入的情况，红黑树的插入思路是先按照二叉查找树插入的操作（具体思路请看<a href="http://rkhcy.github.io/2018/12/19/Tree/" target="_blank" rel="noopener">这篇</a>）插入节点，再通过重新着色或者旋转的方法恢复红黑属性。规定了<code>新增的节点颜色为红色</code>（如果设为黑色，就会导致根到叶子的路径上有一条路上，多一个额外的黑节点，这个是很难调整的。）但是设为红色节点后，可能会导致出现两个连续红色节点的冲突，因此插入操作主要是解决上面的红黑属性 2 。下面为总结的 4 种插入情景及对应调整 “套路”，插入时检查<code>叔叔</code>的颜色，假设 z 为新插入的节点，</p>
+<ol>
+<li>z 为根节点 → 将 z 置为黑色</li>
+<li>z 的叔叔是红色 → 重新着色</li>
+<li>z 的叔叔是黑色（直线形）→ 旋转 z 的爷爷 &amp; 重新着色</li>
+<li>z 的叔叔是黑色（三角形） → 旋转 z 的父亲</li>
+</ol>
+<p>基于这 4 点举例分析红黑树插入的情况，先插入节点 15：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_01.gif">
+</center>
+
+<p>由于 15 是根节点，满足套路 1 ，因此将其由红色置为黑色；再相继插入 5、1：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_02.gif">
+</center>
+
+<p>插入节点 1 后满足套路 3 ，这里先对节点 15 右旋，再重新着色即恢复红黑属性。</p>
+<p>再看下一个稍微复杂的例子，对下面这棵红黑树插入节点 10：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_06.png">
+</center>
+插入节点 10 后满足套路 2 ，将 9 、13 置为黑色，将 12 置为红色，流程如下：
+
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_03.gif">
+</center>
+
+<p>此时满足套路 4，将父节点 15 右旋：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_04.gif">
+</center>
+
+<p>此时满足套路 3，左旋爷爷节点 8 ，再对 8 和 12 重新着色即恢复红黑属性。</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_05.gif">
+</center>
+
+<h2 id="红黑树的删除"><a href="#红黑树的删除" class="headerlink" title="红黑树的删除"></a>红黑树的删除</h2><p>与插入相同，红黑树的删除思路是先按照二叉查找树删除的操作（具体思路请看<a href="http://rkhcy.github.io/2018/12/19/Tree/" target="_blank" rel="noopener">这篇</a>）删除节点，再通过重新着色或者旋转的方法恢复红黑属性。插入操作主要是违反了上面提到的红黑属性 2 ，而删除操作是违反了红黑属性 3 。在插入操作中，根据叔叔的颜色来选择适当的 “套路” ，在删除操作中，主要依据<code>兄弟</code>的颜色 。<code>设 X 是要删除的节点，Y 是替换树中 X 的节点，S 为 X 的兄弟。</code></p>
+<p>I. <code>X 和 Y 中有一个为红色 -&gt; 将 Y 置为黑色</code>。</p>
+<p>来看下例子，在下面的红黑树中要删除节点 30 ：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_01.png">
+</center>
+首先通过二叉查找树的遍历方法找到 30 ，遍历右子树，用 35 代替，再删除 35 ，此时 X 是红色节点 35 ，Y 是空节点（本来就是黑色），直接删除 35 ，流程如下：
+
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_01.gif">
+</center>
+
+<p>再看下面这个例子，在下面的红黑树中要删除节点 30 ：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_02.png">
+</center>
+首先通过二叉查找树的遍历方法找到 30 ，遍历右子树，用 32 代替，再删除 32 ，此时 X 是黑色节点 32 ，Y 是红色节点 35 ，因此将节点 32 删除，并将节点 35 置为黑色，流程如下：
+
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_02.gif">
+</center>
+
+<p>II. <code>X 和 Y 都是黑色。</code></p>
+<p>接下来的情景比较特殊，引入双黑色的概念。双黑色是指：<code>当黑色节点被删除并被黑色孩子替换时，孩子被标记为双黑色。</code>被标记为双黑色的节点，所在的路径黑色节点数量加 1 。共有以下这么几种情况：</p>
+<p>a) <code>兄弟 S 是黑色，S 的孩子至少有一个是红色</code> ，假设 R 是 S 的红色子节点，根据 R 和 S 的位置可以分为下面四种情况：</p>
+<p>a1 . 右右：S 是其父亲的右节点，R 是 S 的右节点。</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_rr.png">
+</center>
+
+
+<p> a2 . 右左：S 是其父亲的右节点，R 是 S 的左节点。</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_rl.png">
+</center>
+a3 . 左左：S 是其父亲的左节点，R 是 S 的左节点。
+
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_ll.png">
+</center>
+
+<p>a4 . 左右：S 是其父亲的左节点，R 是 S 的右节点。</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_lr.png">
+</center>
+
+<p>举个例子，在下面的红黑树中删除节点 5 ：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_08.png">
+</center>
+
+<p>删后如下：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_09.png">
+</center>
+满足 a1 ，左旋根节点 10 ，并对 40 重新着色，流程如下：
+
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_03.gif">
+</center>
+
+<p> b) <code>兄弟 S 是黑色，S 的孩子都是黑色。</code>解决方案：<code>如果父节点为黑色，则置为双黑色，；如果父节点为红色，则置为黑色；S 置为红色；若根节点为双黑色时，置为黑色。</code> </p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_sblack.png">
+</center>
+
+<p>举个例子，在下面的红黑树中删除节点 10 ：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_03.png">
+</center>
+
+<p>首先通过二叉查找树的遍历方法找到 10 ，遍历右子树，用 20 代替，再删除 20 ，删完如下：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_04.png">
+</center>
+
+<p>上面的图偷懒了，我们知道空节点默认是黑色的，所以完整的图应该是这样的：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_05.png">
+</center>
+
+<p>此时不满足红黑属性 3 ，从根节点 10 到其他空叶子节点经过的黑色节点数量为 3 ，而到 z 这条路径经过的黑色节点数量为 2 ，将 z 置为双黑色，这样就平衡了：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_06.png">
+</center>
+
+<p>接下来就是解决双黑色的问题了，将 38 置为红色，将 30 置为黑色即恢复红黑树 ：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:60%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_07.png">
+</center>
+
+<p>下面的红黑树中删除节点 10</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_10.png">
+</center>
+
+<p>删后如下：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_11.png">
+</center>
+
+<p>将 40 置为红色，并把 30 置为双黑色：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_12.png">
+</center>
+
+<p>由于节点 30 是根节点，所以直接去掉节点 30 外圈加的黑色：</p>
+<center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_13.png">
+</center>
+
+<p>c) <code>兄弟 S 是红色。</code>按照 S 的位置又分为下面两种情况</p>
+<p>c1. 右侧：S 是右子节点：</p>
+ <center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_sred1.png">
+</center>
+
+<p>c2. 左侧：S 是左子节点：</p>
+ <center>
+<img style="box-shadow: 0 0 0 0 rgba(34,36,38,.12),0 0px 0px 0 rgba(34,36,38,.08);zoom:30%"
+src="https://blog-1258142182.cos.ap-chengdu.myqcloud.com/red_black_tree/red_black_tree_delete_sred2.png">
+</center>
+
+<p>Enjoy –☺</p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>

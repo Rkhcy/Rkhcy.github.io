@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!--
+    Blog Theme for Hexo: St. Andrews
+    Designed by Sharvari Desai
+    https://gumroad.com/l/hexo-theme-standrews
+  -->
+
+  <!-- Favicon -->
+  
+      <link rel="icon" href="/images/logo.png" type="image/x-icon" />
+  
+
+  <!-- Title -->
+  
+  <title>图解 HashMap (二) - HuYounger</title>
+
+  <!--Description-->
+  
+      <meta name="description" content="上篇分析了 HashMap 的设计思想以及 Java7 和 Java8 源码上的实现，当然还有一些“坑”还没填完，比如 HashMap 是线程不安全的数据结构，多线程情况下 HashMap 会引起死循环引用，它是怎么产生的？
+Java7 分析通过上一篇的学习，可以知道当存入的键值对超过 HashMa">
+  
+
+  <!--Author-->
+  
+      <meta name="author" content="HuYounger">
+  
+
+  <!--Open Graph Title-->
+  
+      <meta property="og:title" content="图解 HashMap (二)"/>
+  
+
+  <!--Open Graph Site Name-->
+  <meta property="og:site_name" content="HuYounger"/>
+
+  <!-- Pure CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css?family=EB+Garamond|Montserrat:300" rel="stylesheet">
+  
+<link rel="stylesheet" href="/css/styles.css">
+
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+
+  <!-- Google Analytics -->
+  
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+  <body>
+
+		<div class="container my-4">
+  <nav class="navbar navbar-toggleable-sm navbar-light px-1 py-3 my-3 mb-sm-3">
+    <a class="navbar-brand ml-2" href="/"><span class="title">HuYounger</span></a>
+    <button class="navbar-toggler navbar-toggler-right py-2" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse text-center mt-3 mt-md-0" id="navbarCollapse">
+      <ul class="navbar-nav ml-auto my-auto">
+        
+      </ul>
+      <hr class="hidden-md-up" />
+    </div>
+  </nav>
+</div>
+
+
+		<div class="container">
+			
+  <div class="row">
+    <div class="col-12">
+          <img class="img-fluid cover-image" src="/images/cover_hashmap2.jpg" alt="图解 HashMap (二)">
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-12 col-lg-8 offset-lg-2 mt-4">
+
+    <div class="post-page text-center my-4">
+      <h1>图解 HashMap (二)</h1>
+      <hr>
+      <span class="date">2017-12-04</span>
+    </div>
+
+    <p>上篇分析了 HashMap 的设计思想以及 Java7 和 Java8 源码上的实现，当然还有一些“坑”还没填完，比如 HashMap 是线程不安全的数据结构，多线程情况下 HashMap 会引起死循环引用，它是怎么产生的？</p>
+<h3 id="Java7-分析"><a href="#Java7-分析" class="headerlink" title="Java7 分析"></a>Java7 分析</h3><p>通过上一篇的学习，可以知道当存入的键值对超过 HashMap 的阈值时，HashMap 会扩容，即创建一个新的数组，并将原数组里的键值对“转移”到新的数组中。在“转移”的时候，会根据新的数组长度和要转移的键值对 key 值重新计算在新数组中的位置。重温下 Java7 中负责“转移”功能的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">void transfer(Entry[] newTable, boolean rehash) &#123;</span><br><span class="line">    &#x2F;&#x2F;获取新数组的长度</span><br><span class="line">    int newCapacity &#x3D; newTable.length;</span><br><span class="line">    &#x2F;&#x2F;遍历旧数组中的键值对</span><br><span class="line">    for (Entry&lt;K,V&gt; e : table) &#123;</span><br><span class="line">        while(null !&#x3D; e) &#123;</span><br><span class="line">            Entry&lt;K,V&gt; next &#x3D; e.next;</span><br><span class="line">            if (rehash) &#123;</span><br><span class="line">                e.hash &#x3D; null &#x3D;&#x3D; e.key ? 0 : hash(e.key);</span><br><span class="line">            &#125;</span><br><span class="line">            &#x2F;&#x2F;计算在新表中的索引，并到新数组中</span><br><span class="line">            int i &#x3D; indexFor(e.hash, newCapacity);</span><br><span class="line">            e.next &#x3D; newTable[i];</span><br><span class="line">            newTable[i] &#x3D; e;</span><br><span class="line">            e &#x3D; next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为了加深理解，画图如下</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_100.png" style="zoom:50%"/>
+
+<p>这里假设扩容前后 5 号坑石头、盖伦、蒙多的 hash 值与新旧数组长度取模运算后还是 5 。上篇文章也总结了，Java7 扩容转移前后链表顺序会倒置。当只有单线程操作 hashMap 时，一切都是那么美好，但是如果多线程同时操作一个 hashMap，问题就来了，下面看下多线程操作一个 hashMap 在 Java7 源码下是怎样引起死循环引用。</p>
+<p>前戏是这样的：有两个线程分别叫 Thread1 和 Thread2 ，它们都有操作同一个 hashMap 的权利，假设 hashMap 中的键值对是 12 个，石头和盖伦扩容前后的 hash 值与新旧数组长度取模运算后还是 5 。扩容前的模拟堆内存情况如图</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_108.png" style="zoom:50%"/>
+
+<p>Thread1 得到执行权，Thread1 往 hashMap 里 put 第 13 个键值对的时候判断超过阈值，执行扩容操作，Thread1 创建了一个新数组，还没来得及转移旧键值对的时候，系统时间片切到 Thread2 ，整个过程用图表示</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_104.png" style="zoom:50%"/>
+
+<p>可以看到 Thread1 只是创建了个新数组，还没来得及转移就被挂起了，新数组没有内容，此时在 Thread1 的视角认的是 e是石头，next 是盖伦；此时的模拟内存图情况</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_133.png" style="zoom:50%"/>
+
+<p>再看下 Thread2 的操作，同样 Thread2 往 hashMap 里 put 第 13 个键值对的时候判断超过阈值，执行扩容操作，Thread2 先创建一个新数组，不同的是，Thread2 运气好，在时间片轮换前转移工作也走完了。第一次遍历</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_150.png" style="zoom:50%"/>
+
+<p>第二次遍历</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_151.png" style="zoom:50%"/>
+
+<p>此时模拟的内存情况</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_134.png" style="zoom:50%"/>
+
+<p>可以看到此时对于盖伦来说，他的 next 是石头；对于石头来说，它的 next 为 null ，隐患就此埋下。接下来时间片又切到Thread1 ，先看下 Thread1 的处境</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_112.png" style="zoom:50%"/>
+
+<p>结合代码分析如下</p>
+<p>第一步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_114.png" style="zoom:50%"/>
+
+<p>第二步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_115.png" style="zoom:50%"/>
+
+<p>第三步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_116.png" style="zoom:50%"/>
+
+<p>第四步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_118.png" style="zoom:50%"/>
+
+<p>第五步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_119.png" style="zoom:50%"/>
+
+<p>第六步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_121.png" style="zoom:50%"/>
+
+<p>第七步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_122.png" style="zoom:50%"/>
+
+<p>第八步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_123.png" style="zoom:50%"/>
+
+<p>第九步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_124.png" style="zoom:50%"/>
+
+<p>第10步：</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_126.png" style="zoom:50%"/>
+
+<p>到这终于看到盖伦和石头”互指”，水乳交融。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_127.png" style="zoom:50%"/>
+
+<p>那这会带来什么后果呢？后续操作新数组的 5 号坑会进入死循环(注意，操作其他坑并不会有问题)，例如 Java7 put 操作</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_129.png" style="zoom:50%"/>
+
+<p>Java7 get 操作会执行 getEntry ，同样会引起死循环。</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_130.png" style="zoom:50%"/>
+
+<p>到此，Java7 多线程操作 HashMap 可能形成死循环的原因剖析完成。</p>
+<h3 id="Java8分析"><a href="#Java8分析" class="headerlink" title="Java8分析"></a>Java8分析</h3><p>通过上一篇的学习可知，Java7 转移前后位置颠倒，而 Java8 转移键值对前后位置不变。同样的前戏，看下代码</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_131.png" style="zoom:50%"/>
+
+<p>此时模拟堆内存情况</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_133.png" style="zoom:50%"/>
+
+<p>Thread1的情况</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_132.png" style="zoom:50%"/>
+
+<p>这时候 Thread2 获得执行权，扩容并完成转移工作，通过上篇的学习可知，Java8 在转移前会创建两条链表，即扩容后位置不加原数组长度的 lo 链和要加原数组长度的 hi 链，这里假设石头和盖伦扩容前后都在 5 号坑，即这是一条 lo 链(其实就算不在同一个坑也不影响，原因就是 Java8 扩容前后链顺序不变)。Thread2 遍历第一次</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_021.png" style="zoom:50%"/>
+
+<p>第二次</p>
+<img src="http://blog-1258142182.cos.ap-chengdu.myqcloud.com/hashmap_final.png" style="zoom:50%"/>
+
+<p>可以看到 Thread2 全程是没有去修改石头和盖伦的引用关系，石头.next 是盖伦，盖伦.next 是 null 。那么 Thread1 得到执行权后其实只是重复了 Thread2 的工作。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>通过源码分析，Java7 在多线程操作 hashmap 时可能引起死循环，原因是扩容转移后前后链表顺序倒置，在转移过程中修改了原来链表中节点的引用关系；Java8 在同样的前提下并不会引起死循环，原因是扩容转移后前后链表顺序不变，保持之前节点的引用关系。那是不是意味着 Java8 就可以把 HashMap 用在多线程中呢？个人感觉即使不会出现死循环，但是通过源码看到 put/get 方法都没有加同步锁，多线程情况最容易出现的就是：无法保证上一秒 put 的值，下一秒 get 的时候还是原值，建议使用 ConcurrentHashMap。</p>
+<h3 id="感谢"><a href="#感谢" class="headerlink" title="感谢"></a>感谢</h3><p><a href="http://javabypatel.blogspot.ca/2016/01/infinite-loop-in-hashmap.html" target="_blank" rel="noopener">讲HashMap多线程死循环最详细的外国小哥</a></p>
+
+
+    
+
+
+  </div>
+</div>
+
+
+
+			<footer class="text-center mt-5 py-5">
+  
+    <a href="hu550364679@gmail.com" target="_blank"><i class="fa fa-envelope-o mr-4"></i></a>
+  
+  
+  
+  
+    <a href="https://www.instagram.com/hu.chengyang/" target="_blank"><i class="fa fa-instagram mr-4"></i></a>
+  
+  
+  
+  
+  
+  
+  
+</footer>
+
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+
+<!-- Disqus Comments -->
+
+
+
+  </body>
+</html>
