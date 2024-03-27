@@ -1,6 +1,9 @@
+@import 'lxgw-wenkai-webfont/style.css';
+
 body {
-	font-family: "Noto Serif SC";
-	font-size: 1rem;
+	/* Lite version */
+  font-family: "LXGW WenKai", sans-serif;
+	font-size: 108%
 	color: #333;
 }
 
