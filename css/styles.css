@@ -1,8 +1,6 @@
-@import 'lxgw-wenkai-webfont/style.css';
-
 body {
 	/* Lite version */
-  font-family: "LXGW WenKai", sans-serif;
+  font-family: 'LXGW WenKai'
 	font-size: 108%
 	color: #333;
 }
@@ -101,7 +99,7 @@ input:focus, textarea:focus {
 }
 
 .nav-item {
-	font-family: 'Montserrat', sans-serif;
+	font-family: 'LXGW WenKai', sans-serif;
 	text-transform: uppercase;
 	font-size: 0.8rem;
 	font-weight: 300;
@@ -161,7 +159,7 @@ input:focus, textarea:focus {
 
 .date {
 	color: #666;
-	font-family: 'Montserrat', sans-serif;
+	font-family: 'LXGW WenKai', sans-serif;
 	text-transform: uppercase;
 	font-size: 0.7rem;
 	font-weight: 300;
@@ -202,6 +200,7 @@ input:focus, textarea:focus {
 	margin-top: 20px;
 	margin-bottom: 10px;
 }
+
 
 /* Footer
 —————————————————————————————————————————————————————————————————————— */
